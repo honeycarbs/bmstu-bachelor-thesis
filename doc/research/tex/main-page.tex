@@ -1,10 +1,9 @@
 \documentclass[14pt]{extreport}
 
-\bibliography{ref-lib}
 
-\include{preambule.inc}
+\input{preambule.inc}
 
-\bibliography{ref-lib}
+\addbibresource{ref-lib.bib}
 
 \begin{document}
 
@@ -24,10 +23,14 @@
 
 \include{03-introduction}
 
+\removechapterdots
+
 \include{04-analyth}
 
-\makebibliography
+\include{05-conclusion}
 
-	
+\printbibliography[title=СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ]
+\addcontentsline{toc}{chapter}{\textbf{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}}
+
 \end{document}
 
