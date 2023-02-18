@@ -1,16 +1,23 @@
-\usepackage[T1,T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[english,main=russian]{babel}
-%\usepackage{fix-cm}
 
-\usepackage{lmodern}
-\DeclareFontFamilySubstitution{T2A}{lmr}{cmr}
-\DeclareFontFamilySubstitution{T2A}{lmss}{cmss}
-\DeclareFontFamilySubstitution{T2A}{lmtt}{cmtt}
+%\usepackage{newtxmath}
+%\usepackage[no-math]{fontspec}
+%\usepackage{polyglossia}
+%
+%\setdefaultlanguage{russian}
+%\setotherlanguage{english}
 
-\usepackage{microtype}
-\microtypesetup{expansion=false}
-\sloppy
+%\newcommand{\RU}[1]{\foreignlanguage{russian}{#1}}
+
+%\defaultfontfeatures{Ligatures = TeX, Mapping = tex-text}
+%
+%\setmainlanguage[babelshorthands = true]{russian}
+%\setotherlanguage{english}
+%
+%\setmainfont{Times New Roman}
+%
+%\newfontfamily\cyrillicfont{Times New Roman}
+%\newfontfamily\englishfont{Times New Roman}
 
 \usepackage[
 	left=30mm,
@@ -20,9 +27,9 @@
 ]{geometry}
 
 \makeatletter
-	\renewcommand\LARGE{\@setfontsize\LARGE{22pt}{20}}
-	\renewcommand\Large{\@setfontsize\Large{20pt}{20}}
-	\renewcommand\large{\@setfontsize\large{16pt}{20}}
+\renewcommand\LARGE{\@setfontsize\LARGE{22pt}{20}}
+\renewcommand\Large{\@setfontsize\Large{20pt}{20}}
+\renewcommand\large{\@setfontsize\large{16pt}{20}}
 \makeatother
 
 \usepackage{microtype} % Настройка переносов
@@ -43,7 +50,7 @@
 % Текст под линией 
 \newcommand*{\undertext}[2]{%
 	\begin{tabular}[t]{@{}c@{}}%
-		#1\\\relax(\scriptsize#2)%
+		#1\\\relax\scriptsize(#2)%
 	\end{tabular}
 }
 
@@ -54,76 +61,62 @@
 	\leavevmode\leaders\hrule\@height#1\hfill \kern\z@
 }
 
+\newcolumntype{T}{>{\centering\arraybackslash}p{0.3\textwidth}}
+\newcolumntype{P}{>{\centering\arraybackslash}p{0.2\textwidth}}
+
 \usepackage[figure,table]{totalcount} % Подсчет изображений, таблиц
 \usepackage{rotating} % Поворот изображения вместе с названием
 \usepackage{lastpage} % Для подсчета числа страниц
 
 \usepackage{titlesec}
 \usepackage{titletoc}
+\usepackage{tocloft}
 
-\newcommand{\makechapterdots}{
-	\titlecontents{chapter}[0pt]
-	{}
-	{\large\thecontentslabel. \enspace}
-	{}
-	{\titlerule*[1pc]{.}\contentspage}
-}
+\setcounter{tocdepth}{5}
 
-\newcommand{\removechapterdots}{
-	\titlecontents{chapter}[0pt]
-	{}
-	{\large\thecontentslabel. \enspace}
-	{}
-	{\titlerule*[1pc]{}\contentspage}
-}
+\setlength{\cftbeforetoctitleskip}{-25pt}
+\renewcommand{\cfttoctitlefont}{\large\bfseries}
+
+\renewcommand{\cftchapfont}{\large\bfseries}
+\renewcommand{\cftsecfont}{\large}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+
+\setlength{\cftbeforepartskip}{10pt}
 
 
-\titlecontents{section}[20pt]
-{}
-{\large\thecontentslabel. \enspace}
-{}
-{\titlerule*[1pc]{.}\contentspage}
+\setcounter{secnumdepth}{5}
 
-\titlecontents{subection}[20pt]
-{}
-{\large\thecontentslabel. \enspace}
-{}
-{\titlerule*[1pc]{.}\contentspage}
-
-\titlecontents{subsubection}[20pt]
-{}
-{\large\thecontentslabel? \enspace}
-{}
-{\titlerule*[1pc]{.}\contentspage}
-
+\titleformat{\part}[block]
+{\large\bfseries}{\thechapter}{0.5em}{\large\centering}
 
 \titleformat{\chapter}[block]
-{\large\scshape\bfseries}{\thechapter.}{0.5em}{\large\scshape}
+{\large\bfseries}{\thechapter}{0.5em}{\large\raggedright}
 
 \titleformat{\section}[block]
-{\hspace{\parindent}\large\scshape\bfseries}{\thesection.}{0.5em}{\large\scshape\raggedright}
+{\large\bfseries}{\thesection}{0.5em}{\large\raggedright}
+\renewcommand{\thesection}{\arabic{chapter}.\arabic{section}.}
 
 \titleformat{\subsection}[block]
-{\hspace{\parindent}\large\scshape\bfseries}{\thesubsection.}{0.5em}{\large\scshape\raggedright}
+{\hspace{\parindent}\large\bfseries}{\thesubsection}{0.5em}{\large\raggedright}
+\renewcommand{\thesubsection}{\arabic{chapter}.\arabic{section}.\arabic{subsection}.}
 
 \titleformat{\subsubsection}[block]
-{\hspace{\parindent}\Large\scshape\bfseries}{\thesubsection.}{0.5em}{\large\scshape\raggedright}
+{\hspace{\parindent}\large\bfseries}{\thesubsubsection}{0.5em}{\large\raggedright}
+\renewcommand{\thesubsubsection}{\arabic{chapter}.\arabic{section}.\arabic{subsection}.\arabic{subsubsection}.}
+
+\titleclass{\part}{top}
+\titlespacing*{\part}{12.5mm}{-22pt}{10pt}
 
 \titlespacing{\chapter}{12.5mm}{-22pt}{10pt}
 \titlespacing{\section}{12.5mm}{10pt}{10pt}
 \titlespacing{\subsection}{12.5mm}{10pt}{10pt}
 \titlespacing{\subsubsection}{12.5mm}{10pt}{10pt}
 
-\usepackage{tocloft}
-\renewcommand{\cftsubsecfont}{\normalfont}  
-\renewcommand{\cftsubsecaftersnum}{.}
-\renewcommand{\cftsecaftersnum}{.}
-
 % ---------------------------------------- CAPTION --------------------------------- %
 
 \usepackage[
-	labelsep=endash,
-	singlelinecheck=false,
+labelsep=endash,
+singlelinecheck=false,
 ]{caption}
 
 \captionsetup[figure]{justification=centering}
@@ -139,12 +132,12 @@
 \setlist[enumdescript,1]{%
 	before={\setcounter{descriptcount}{0}%
 		\renewcommand*\thedescriptcount{\arabic{descriptcount})}}
-	,font=\scshape\stepcounter{descriptcount}\thedescriptcount~
+	,font=\stepcounter{descriptcount}\thedescriptcount~
 }
 \setlist[enumdescript,2]{%
 	before={\setcounter{descriptcount}{0}%
 		\renewcommand*\thedescriptcount{\roman{descriptcount}}}
-	,font=\scshape\stepcounter{descriptcount}\thedescriptcount~
+	,font=\stepcounter{descriptcount}\thedescriptcount~
 }
 
 \def\labelitemi{--} % Изменение буллета для списков
@@ -170,28 +163,80 @@
 
 % ----------------------------------------- MATH -----------------------------------------
 
-\RequirePackage{lscape}
-\RequirePackage{afterpage}
+\usepackage{lscape}
+\usepackage{afterpage}
 
-\RequirePackage{amsmath}
-\RequirePackage{amssymb}
+\usepackage{amsmath}
+% ----------------------------------------- LST -----------------------------------------
+\usepackage{listings}
+\usepackage{courier}
+
+%\usepackage[cache=false, newfloat]{minted}
+%\newenvironment{code}{\captionsetup{type=listing}}{}
+\renewcommand{\lstlistingname}{Листинг}
+
+\newcommand{\commentfont}{\fontfamily{pcr}}
+
+\usepackage{listings-golang} % import this package after listings
+%\usepackage{minted}
+\lstset{
+	basicstyle=\fontfamily{pcr}\footnotesize,
+	numbers=left,
+	numberstyle=\fontfamily{pcr}\tiny\color{black},
+	numbersep=10pt,
+	tabsize=4,
+	keywordstyle=\fontfamily{pcr}\bfseries\color{black},
+	frame=tblr,	
+	xleftmargin=20pt,
+	framexleftmargin=20pt,
+	framexrightmargin=5pt,
+	framexbottommargin=5pt,
+}
 
 % ----------------------------------------- BIBLIO ---------------------------------------
 
+\usepackage{totcount}
+%\newtotcounter{citenum} %From the package documentation
+%\AtEveryBibitem{\stepcounter{citenum}}
+
 \usepackage[
-	style=gost-numeric,
-	language=auto,
-	autolang=other,
-	sorting=none,
-	maxbibnames=99,
-	backend=biber,
+style=gost-numeric,
+language=auto,
+autolang=other,
+sorting=none,
+maxbibnames=99,
+bibencoding=inputenc,
+blockpunct=space,
+backend=biber,
+citetracker,
 ]{biblatex}
 \usepackage{csquotes}
 
+\newcounter{totalbibentries}
+\newcommand*{\listcounted}{}
+
+\makeatletter
+\AtDataInput{%
+	\xifinlist{\abx@field@entrykey}\listcounted
+	{}
+	{\stepcounter{totalbibentries}%
+		\listxadd\listcounted{\abx@field@entrykey}}%
+}
+\makeatother
+
+
+%\providecommand*{\BibDash}{}
+\DeclareFieldFormat{extradate}{}
+
 \DefineBibliographyStrings{russian}{%
-	urlfrom = {Режим доступа},
+	urlfrom = {[Электронный ресурс]},
 }
 
 \DeclareFieldFormat{urldate}{(дата обращения:\addspace\thefield{urlday}\adddot \thefield{urlmonth}\adddot\thefield{urlyear})}
 
-\DeclareFieldFormat{url}{\bibstring{urlfrom}\addcolon\space\url{#1}}
+
+
+\DeclareFieldFormat{url}{\bibstring{urlfrom}, URL:\addcolon\space\url{#1}}
+
+\usepackage{url}
+\urlstyle{same}
