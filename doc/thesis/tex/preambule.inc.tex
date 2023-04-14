@@ -56,9 +56,6 @@
 	\leavevmode\leaders\hrule\@height#1\hfill \kern\z@
 }
 
-\newcolumntype{T}{>{\centering\arraybackslash}p{0.3\textwidth}}
-\newcolumntype{P}{>{\centering\arraybackslash}p{0.2\textwidth}}
-
 \usepackage[figure,table]{totalcount} % Подсчет изображений, таблиц
 \usepackage{rotating} % Поворот изображения вместе с названием
 \usepackage{lastpage} % Для подсчета числа страниц
@@ -145,6 +142,11 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 
+\newcolumntype{T}{>{\centering\arraybackslash}p{0.3\textwidth}}
+\newcolumntype{H}{>{\centering\arraybackslash}p{0.45\textwidth}}
+%\newcolumntype{DT}{>{\centering\arraybackslash}p{0.6\textwidth}}
+\newcolumntype{P}{>{\centering\arraybackslash}p{0.2\textwidth}}
+
 % ---------------------------------------- FIGURE ----------------------------------------
 
 \usepackage{graphicx}
@@ -167,6 +169,9 @@
 \usepackage{afterpage}
 
 \usepackage{amsmath}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
 % ----------------------------------------- LST -----------------------------------------
 \usepackage{listings}
 \usepackage{courier}
@@ -192,6 +197,23 @@
 	framexrightmargin=5pt,
 	framexbottommargin=5pt,
 }
+
+\usepackage[ruled,linesnumbered,resetcount,algochapter]{algorithm2e}
+\SetKwInput{KwData}{Исходные параметры}
+\SetKwInput{KwResult}{Результат}
+\SetKwInput{KwIn}{Входные данные}
+\SetKwInput{KwOut}{Выходные данные}
+\SetKwIF{If}{ElseIf}{Else}{если}{тогда}{иначе если}{иначе}{конец условия}
+\SetKwFor{While}{до тех пор, пока}{выполнять}{конец цикла}
+\SetKw{KwTo}{от}
+\SetKw{KwRet}{возвратить}
+\SetKw{Return}{возвратить}
+\SetKwBlock{Begin}{начало блока}{конец блока}
+\SetKwSwitch{Switch}{Case}{Other}{Проверить значение}{и выполнить}{вариант}{в противном случае}{конец варианта}{конец проверки значений}
+\SetKwFor{For}{цикл}{выполнять}{конец$\;$цикла} % очевидный и невероятный костыль
+\SetKwFor{ForEach}{для каждого}{выполнять}{конец цикла}
+\SetKwRepeat{Repeat}{повторять}{до тех пор, пока}
+\SetAlgorithmName{Алгоритм}{алгоритм}{Список алгоритмов}
 
 % ----------------------------------------- BIBLIO ---------------------------------------
 
