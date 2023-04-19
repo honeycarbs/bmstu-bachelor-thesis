@@ -8,6 +8,6 @@ class SampleRepository(Repository):
     def create(self, entity):
         cursor = self.db_client.cnx.cursor()
         query = f"INSERT INTO sample VALUES (%s, %s, %s);"
-        cursor.execute(query, (entity.hash_id, entity.audio_path, entity.emo))
+        cursor.execute(query, (entity.uuid, entity.audio_path, entity.emo))
         self.db_client.cnx.commit()
         cursor.close()

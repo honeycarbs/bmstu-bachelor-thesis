@@ -12,7 +12,7 @@ class FrameRepository(Repository):
 
     def _create_frame(self, frame):
         cursor = self.db_client.cnx.cursor()
-        query = "INSERT INTO frame (uuid, sample_hash, index) VALUES (%s, %s, %s)"
+        query = "INSERT INTO frame (uuid, sample_uuid, index) VALUES (%s, %s, %s)"
         values = (frame.id, frame.sample_id, frame.sample_num)
 
         cursor.execute(query, values)
@@ -23,7 +23,7 @@ class FrameRepository(Repository):
         cursor = self.db_client.cnx.cursor()
 
         for i, c in enumerate(mfcc):
-            query = "INSERT INTO mfcc (uuid, frame_id, index, value) VALUES (%s, %s, %s, %s)"
+            query = "INSERT INTO mfcc (uuid, frame_uuid, index, value) VALUES (%s, %s, %s, %s)"
             values = (str(uuid.uuid4()), frame_id, i + 1, c.item())
             cursor.execute(query, values)
             self.db_client.cnx.commit()

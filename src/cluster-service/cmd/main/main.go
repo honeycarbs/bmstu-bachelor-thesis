@@ -31,14 +31,14 @@ func main() {
 		panic(err)
 	}
 
-	l := len(samples)
+	//samples = samples[:100]
 
 	for i := 0; i < len(samples); i++ {
-		samples[i].Frames, err = frameService.GetAllBySample(samples[i].Hash)
+		samples[i].Frames, err = frameService.GetAllBySample(samples[i].ID)
 		if err != nil {
 			panic(err)
 		}
-		logger.Infof("got %v frames from sample %v out of %v", len(samples[i].Frames), i, l)
+		logger.Infof("got %v frames from sample %v out of %v", len(samples[i].Frames), i, 100)
 	}
 
 	frames, err := sampleService.CollectAllFrames(samples)
@@ -47,11 +47,11 @@ func main() {
 	}
 	fmt.Println(len(frames))
 
-	clusters, err := clusterService.AssignClusters(frames, 50, 50)
+	clusters, err := clusterService.AssignClusters(frames, 500, 50)
 	if err != nil {
 		panic(err)
 	}
-
+	//
 	for _, cluster := range clusters {
 		err := clusterService.CreateCluster(cluster)
 		if err != nil {

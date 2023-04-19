@@ -1,8 +1,8 @@
 package entity
 
 type Sample struct {
-	Hash      string `db:"hash"`
+	ID        string `db:"uuid"`
 	AudioPath string `db:"audio_path"`
-	Emotion   string `db:"emotion"`
+	Emotion   Label  `db:"emotion"`
 	Frames    []Frame
 }

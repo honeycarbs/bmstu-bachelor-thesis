@@ -18,7 +18,7 @@ func (s *SamplePostgres) Get() ([]entity.Sample, error) {
 	var samples []entity.Sample
 
 	err := s.db.Select(&samples,
-		`SELECT hash, audio_path, emotion FROM sample`)
+		`SELECT uuid, audio_path, emotion FROM sample`)
 	if err != nil {
 		return nil, err
 	}

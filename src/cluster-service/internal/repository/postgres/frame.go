@@ -24,11 +24,11 @@ func NewFramePostgres(cli *psqlcli.Client) *FramePostgres {
 
 func (f *FramePostgres) GetOne(sampleHash string, sampleNum int) (entity.Frame, error) {
 	fm := entity.Frame{
-		SampleHash: sampleHash,
+		SampleUUID: sampleHash,
 	}
 
 	err := f.db.Get(&fm,
-		`SELECT uuid, index FROM frame WHERE sample_hash = $1 AND index = $2`, sampleHash, sampleNum)
+		`SELECT uuid, index FROM frame WHERE sample_uuid = $1 AND index = $2`, sampleHash, sampleNum)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +69,7 @@ func (f *FramePostgres) AssignCluster(clusterID, frameID string) error {
 }
 
 func (f *FramePostgres) CountPerSample(sampleHash string) (int, error) {
-	query := "select count(uuid) from frame where sample_hash =  $1"
+	query := "select count(uuid) from frame where sample_uuid =  $1"
 
 	var count int
 	if err := f.db.Get(&count, query, sampleHash); err != nil {

@@ -2,7 +2,7 @@ package entity
 
 type Frame struct {
 	ID           string `db:"uuid"`
-	SampleHash   string `db:"sample_hash"`
+	SampleUUID   string `db:"sample_uuid"`
 	Index        int    `db:"index"`
 	ClusterIndex string `db:"cluster_uuid"`
 	MFCCs        []float64

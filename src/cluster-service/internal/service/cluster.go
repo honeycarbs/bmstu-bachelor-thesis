@@ -4,6 +4,7 @@ import (
 	"cluster/internal/entity"
 	"cluster/internal/repository/postgres"
 	"cluster/pkg/kmeans"
+	"fmt"
 	"github.com/google/uuid"
 )
 
@@ -23,6 +24,7 @@ func (s *ClusterService) AssignClusters(frames []entity.Frame, nclusters, maxRou
 	}
 
 	centroids := s.constructCentroidsData(centroidsCoords)
+	fmt.Printf("Silhouette coefficient is: %v\n", kmeans.SilhouetteCoefficient(nodes, centroidsCoords))
 	return s.constructClusterData(centroids), nil
 }
 

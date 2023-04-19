@@ -1,11 +1,5 @@
 package hmm
 
-type HiddenMarkovModel struct {
-	Transitions             [][]float64
-	Emissions               [][]float64
-	StationaryProbabilities []float64
-}
-
 func (hmm *HiddenMarkovModel) BaumWelch(observationSequence []int, iterations int) {
 	var (
 		alpha = make([][]float64, len(observationSequence))
@@ -26,74 +20,30 @@ func (hmm *HiddenMarkovModel) BaumWelch(observationSequence []int, iterations in
 		}
 	}
 
+	hmm.Emissions = LaplaceSmoothing(hmm.Emissions)
 	for it := 0; it < iterations; it++ {
-		hmm.forwardAlgorithm(observationSequence, alpha)
-		hmm.backwardAlgorithm(observationSequence, beta)
+		hmm.ForwardAlgorithm(observationSequence, alpha)
+		//fmt.Println("--alpha probs--")
+		//fmt.Println(alpha)
+		hmm.BackwardAlgorithm(observationSequence, beta)
+		//fmt.Println("--beta probs--")
+		//fmt.Println(beta)
+		//fmt.Println("-----------")
 
 		// Compute gamma and xi
 		hmm.computeGamma(observationSequence, alpha, beta, gamma)
+		//fmt.Println("--gamma probs--")
+		//fmt.Println(gamma)
 		hmm.computeXi(observationSequence, alpha, beta, xi)
+		//fmt.Println("--xi probs--")
+		//fmt.Println(xi)
 
 		// Update the model parameters
 		hmm.update(observationSequence, gamma, xi)
 	}
 }
 
-func (hmm *HiddenMarkovModel) Viterbi(observationSequence []int) []int {
-	// Initialize delta and psi matrices
-	delta := make([][]float64, len(observationSequence))
-	for i := range delta {
-		delta[i] = make([]float64, len(hmm.Transitions))
-	}
-	psi := make([][]int, len(observationSequence))
-	for i := range psi {
-		psi[i] = make([]int, len(hmm.Transitions))
-	}
-
-	// Initialize the first row of the delta matrix
-	for i := 0; i < len(hmm.Transitions); i++ {
-		delta[0][i] = hmm.StationaryProbabilities[i] * hmm.Emissions[i][observationSequence[0]]
-		psi[0][i] = 0
-	}
-
-	// Recursively calculate the delta and psi matrices
-	for t := 1; t < len(observationSequence); t++ {
-		for j := 0; j < len(hmm.Transitions); j++ {
-			maxDelta := 0.0
-			maxDeltaIndex := 0
-			for i := 0; i < len(hmm.Transitions); i++ {
-				deltaValue := delta[t-1][i] * hmm.Transitions[i][j] * hmm.Emissions[j][observationSequence[t]]
-				if deltaValue > maxDelta {
-					maxDelta = deltaValue
-					maxDeltaIndex = i
-				}
-			}
-			delta[t][j] = maxDelta
-			psi[t][j] = maxDeltaIndex
-		}
-	}
-
-	// Backtrack to find the most likely hidden state sequence
-	maxDelta := 0.0
-	maxDeltaIndex := 0
-	for i := 0; i < len(hmm.Transitions); i++ {
-		if delta[len(observationSequence)-1][i] > maxDelta {
-			maxDelta = delta[len(observationSequence)-1][i]
-			maxDeltaIndex = i
-		}
-	}
-
-	stateSequence := make([]int, len(observationSequence))
-	stateSequence[len(observationSequence)-1] = maxDeltaIndex
-	for t := len(observationSequence) - 2; t >= 0; t-- {
-		stateSequence[t] = psi[t+1][stateSequence[t+1]]
-	}
-
-	return stateSequence
-}
-
-// Compute alpha values
-func (hmm *HiddenMarkovModel) forwardAlgorithm(observationSequence []int, alpha [][]float64) {
+func (hmm *HiddenMarkovModel) ForwardAlgorithm(observationSequence []int, alpha [][]float64) float64 {
 	// Initialize alpha[0]
 	for i := 0; i < len(hmm.Transitions); i++ {
 		alpha[0][i] = hmm.StationaryProbabilities[i] * hmm.Emissions[i][observationSequence[0]]
@@ -109,10 +59,18 @@ func (hmm *HiddenMarkovModel) forwardAlgorithm(observationSequence []int, alpha 
 			alpha[t][j] = sum * hmm.Emissions[j][observationSequence[t]]
 		}
 	}
+
+	//fmt.Println(alpha)
+
+	// Compute the likelihood
+	likelihood := 0.0
+	for i := 0; i < len(hmm.Transitions); i++ {
+		likelihood += alpha[len(observationSequence)-1][i]
+	}
+	return likelihood
 }
 
-// Compute beta values
-func (hmm *HiddenMarkovModel) backwardAlgorithm(observationSequence []int, beta [][]float64) {
+func (hmm *HiddenMarkovModel) BackwardAlgorithm(observationSequence []int, beta [][]float64) {
 	for i := 0; i < len(hmm.Transitions); i++ {
 		beta[len(observationSequence)-1][i] = 1.0
 	}
@@ -193,4 +151,25 @@ func (hmm *HiddenMarkovModel) update(obs []int, gamma [][]float64, xi [][][]floa
 			hmm.Emissions[i][j] = sumGammaObs / sumGamma
 		}
 	}
+}
+
+func LaplaceSmoothing(emissionMatrix [][]float64) [][]float64 {
+	rows := len(emissionMatrix)
+	cols := len(emissionMatrix[0])
+	smoothedMatrix := make([][]float64, rows)
+	for i := 0; i < rows; i++ {
+		smoothedMatrix[i] = make([]float64, cols)
+		for j := 0; j < cols; j++ {
+			smoothedMatrix[i][j] = (emissionMatrix[i][j] + 1) / (sum(emissionMatrix[i]) + float64(cols))
+		}
+	}
+	return smoothedMatrix
+}
+
+func sum(values []float64) float64 {
+	result := 0.0
+	for _, value := range values {
+		result += value
+	}
+	return result
 }

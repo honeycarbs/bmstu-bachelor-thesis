@@ -27,41 +27,26 @@ if __name__ == '__main__':
     setup_logger(logger)
 
     dataset_processor = DatasetProcessor(
-        "/home/honeycarbs/BMSTU/bmstu-bachelor-thesis/srс/DUSHA/processed_dataset_090/aggregated_dataset",
-        "smaller_podcast_test.jsonl")
+        "/home/honeycarbs/BMSTU/bmstu-bachelor-thesis/src/DUSHA/processed_dataset_090/aggregated_dataset",
+        "smaller_dataset.jsonl")
 
     sample_repository = SampleRepository(db_conn)
     frame_repository = FrameRepository(db_conn)
 
     wavs_length = len(dataset_processor.wavs)
 
+    dataset_processor.wavs = dataset_processor.wavs
+
     for i, wav in enumerate(dataset_processor.wavs):
-        sample = DatasetEntity(wav["hash_id"], wav["audio_path"], wav["emotion"])
+        sample = DatasetEntity(wav["uuid"], wav["audio_path"], wav["emotion"])
         sample_repository.create(sample)
         logger.debug(f"created {i + 1} out of {wavs_length} samples")
 
         audio_extractor = AudioFeaturesExtractor(file_path=sample.audio_path)
         mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
         frame_num = mfcc_features.shape[0]
+        logger.debug(f"frame number is {frame_num}")
         for j in range(frame_num):
             mfcc = mfcc_features[j][0]
-            frame = Frame(sample.hash_id, j + 1, mfcc)
+            frame = Frame(sample.uuid, j + 1, mfcc)
             frame_repository.create(frame)
-    #
-    #     mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
-    #     frame_num = mfcc_features.shape[0]
-    #     print(frame_num)
-    #
-    #     for j in range(frame_num):
-    #         mfcc = mfcc_features[j][0]
-    #         frame = Frame(sample.hash_id, j + 1, mfcc)
-    #         repo.create_frame(frame)
-# -----
-        # repo.create(frame)
-        # print(entity.hash_id, entity.audio_path, entity.emo)
-        # audio_extractor = AudioFeaturesExtractor(file_path=wav["audio_path"])
-        # mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
-        # frame_num = mfcc_features.shape[0]
-        # for j in range(frame_num):
-        #     mfcc = mfcc_features[j][0]
-        # print(mfcc_features.shape)

@@ -6,7 +6,7 @@ import librosa.feature as feature
 class AudioFeaturesExtractor:
     def __init__(self, file_path, frame_length=0.02, hop_length=0.01):
         sig, self.sampling_rate = librosa.load(file_path)
-        duration_ms = 3500                                             # 3.5 ms
+        duration_ms = 1000                                          # 3.5 ms
 
         self.frame_length = int(self.sampling_rate * frame_length)  # 20 мс
         self.hop_length = int(hop_length * self.sampling_rate)      # 50% перекрытие

@@ -7,9 +7,9 @@ type ClusterRepository interface {
 }
 
 type FrameRepository interface {
-	getBySample(sampleUUID string) []entity.Frame
+	GetBySample(sampleUUID string) []entity.Frame
 }
 
 type SampleRepository interface {
-	getByLabel(label string) ([]entity.Sample, error)
+	GetByLabel(label entity.Label) ([]entity.Sample, error)
 }

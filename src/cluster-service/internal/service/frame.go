@@ -14,15 +14,15 @@ func NewFrameService(repo *postgres.FramePostgres) *FrameService {
 	return &FrameService{repo: repo}
 }
 
-func (s *FrameService) GetAllBySample(sampleHash string) ([]entity.Frame, error) {
-	count, err := s.countFramesPerSample(sampleHash)
+func (s *FrameService) GetAllBySample(sampleUUID string) ([]entity.Frame, error) {
+	count, err := s.countFramesPerSample(sampleUUID)
 	if err != nil {
 		return nil, err
 	}
 
 	frames := make([]entity.Frame, count)
 	for i := 1; i <= count; i++ {
-		frame, err := s.repo.GetOne(sampleHash, i)
+		frame, err := s.repo.GetOne(sampleUUID, i)
 		if err != nil {
 			return nil, err
 		}
