@@ -2,7 +2,7 @@ import psycopg2
 
 
 class PostgresqlClient:
-    def __init__(self, username, password, dbname, host="localhost", port=5432, ):
+    def __init__(self, username, password, dbname, host="localhost", port=5432):
         dsn = {
             'user': username,
             'password': password,

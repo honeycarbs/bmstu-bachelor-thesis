@@ -1,52 +1,45 @@
 import logging
+import os
 
-from extractor.core import AudioFeaturesExtractor
-from entity.frame import Frame
-from entity.sample import DatasetEntity
+from fastapi import FastAPI
+import uvicorn
+
+from config.core import Config
+from constants import CONFIG_FILE_PATH, LOG_PATH
 from dbclient.core import PostgresqlClient
-from processor.core import DatasetProcessor
+from handler.sample import SampleHTTPRequestHandler
+from service.sample import SampleService
+
 from repository.sample.core import SampleRepository
 from repository.frame.core import FrameRepository
 
 
-def setup_logger(lg):
-    lg.setLevel(logging.DEBUG)
+if __name__ == '__main__':
+    config = Config(CONFIG_FILE_PATH)
+    logger = logging.getLogger("main")
+    logger.setLevel(logging.INFO)
 
-    fh = logging.FileHandler("logs/all.log")
-    fh.setLevel(logging.DEBUG)
+    if not os.path.exists(LOG_PATH):
+        os.makedirs(LOG_PATH)
+
+    fh = logging.FileHandler(f"{LOG_PATH}/all.log")
+    fh.setLevel(logging.INFO)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     fh.setFormatter(formatter)
+    logger.addHandler(fh)
 
-    lg.addHandler(fh)
-    lg.addHandler(logging.StreamHandler())
-
-
-if __name__ == '__main__':
-    db_conn = PostgresqlClient("admin", "admin", "thesis")
-    logger = logging.getLogger("main")
-    setup_logger(logger)
-
-    dataset_processor = DatasetProcessor(
-        "/home/honeycarbs/BMSTU/bmstu-bachelor-thesis/src/DUSHA/processed_dataset_090/aggregated_dataset",
-        "smaller_dataset.jsonl")
-
+    db_conn = PostgresqlClient(config.PSQL_USER, config.PSQL_PASSWORD, config.PSQL_DATABASE)
+    #
     sample_repository = SampleRepository(db_conn)
     frame_repository = FrameRepository(db_conn)
 
-    wavs_length = len(dataset_processor.wavs)
+    sample_service = SampleService(sample_repository, frame_repository,
+                                   config.DATASET_PATH,
+                                   config.DATASET_METAFILE,
+                                   logger)
 
-    dataset_processor.wavs = dataset_processor.wavs
+    app = FastAPI()
+    sample_handler = SampleHTTPRequestHandler(sample_service, logger)
+    app.include_router(sample_handler.router)
 
-    for i, wav in enumerate(dataset_processor.wavs):
-        sample = DatasetEntity(wav["uuid"], wav["audio_path"], wav["emotion"])
-        sample_repository.create(sample)
-        logger.debug(f"created {i + 1} out of {wavs_length} samples")
-
-        audio_extractor = AudioFeaturesExtractor(file_path=sample.audio_path)
-        mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
-        frame_num = mfcc_features.shape[0]
-        logger.debug(f"frame number is {frame_num}")
-        for j in range(frame_num):
-            mfcc = mfcc_features[j][0]
-            frame = Frame(sample.uuid, j + 1, mfcc)
-            frame_repository.create(frame)
+    uvicorn.run(app, host=config.APP_HOST, port=config.APP_PORT)

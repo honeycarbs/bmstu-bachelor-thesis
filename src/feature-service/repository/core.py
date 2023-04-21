@@ -6,3 +6,7 @@ class Repository(ABC):
     def create(self, entity):
         pass
 
+    @abstractmethod
+    def get(self):
+        pass
+
