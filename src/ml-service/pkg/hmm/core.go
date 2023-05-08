@@ -1,5 +1,9 @@
 package hmm
 
+import (
+	"math"
+)
+
 func (hmm *HiddenMarkovModel) BaumWelch(observationSequence []int, iterations int) {
 	var (
 		alpha = make([][]float64, len(observationSequence))
@@ -23,20 +27,9 @@ func (hmm *HiddenMarkovModel) BaumWelch(observationSequence []int, iterations in
 	hmm.Emissions = LaplaceSmoothing(hmm.Emissions)
 	for it := 0; it < iterations; it++ {
 		hmm.ForwardAlgorithm(observationSequence, alpha)
-		//fmt.Println("--alpha probs--")
-		//fmt.Println(alpha)
 		hmm.BackwardAlgorithm(observationSequence, beta)
-		//fmt.Println("--beta probs--")
-		//fmt.Println(beta)
-		//fmt.Println("-----------")
-
-		// Compute gamma and xi
 		hmm.computeGamma(observationSequence, alpha, beta, gamma)
-		//fmt.Println("--gamma probs--")
-		//fmt.Println(gamma)
 		hmm.computeXi(observationSequence, alpha, beta, xi)
-		//fmt.Println("--xi probs--")
-		//fmt.Println(xi)
 
 		// Update the model parameters
 		hmm.update(observationSequence, gamma, xi)
@@ -44,72 +37,86 @@ func (hmm *HiddenMarkovModel) BaumWelch(observationSequence []int, iterations in
 }
 
 func (hmm *HiddenMarkovModel) ForwardAlgorithm(observationSequence []int, alpha [][]float64) float64 {
-	// Initialize alpha[0]
 	for i := 0; i < len(hmm.Transitions); i++ {
-		alpha[0][i] = hmm.StationaryProbabilities[i] * hmm.Emissions[i][observationSequence[0]]
+		alpha[0][i] = math.Log(hmm.StationaryProbabilities[i]) + math.Log(hmm.Emissions[i][observationSequence[0]])
 	}
 
-	// Recursion step
 	for t := 1; t < len(observationSequence); t++ {
 		for j := 0; j < len(hmm.Transitions); j++ {
-			sum := 0.0
+			sum := math.Inf(-1)
 			for i := 0; i < len(hmm.Transitions); i++ {
-				sum += alpha[t-1][i] * hmm.Transitions[i][j]
+				sum = logAdd(sum, alpha[t-1][i]+math.Log(hmm.Transitions[i][j]))
 			}
-			alpha[t][j] = sum * hmm.Emissions[j][observationSequence[t]]
+			alpha[t][j] = sum + math.Log(hmm.Emissions[j][observationSequence[t]])
 		}
 	}
 
-	//fmt.Println(alpha)
-
-	// Compute the likelihood
-	likelihood := 0.0
+	logLikelihood := math.Inf(-1)
 	for i := 0; i < len(hmm.Transitions); i++ {
-		likelihood += alpha[len(observationSequence)-1][i]
+		logLikelihood = logAdd(logLikelihood, alpha[len(observationSequence)-1][i])
 	}
-	return likelihood
+	return logLikelihood
 }
 
 func (hmm *HiddenMarkovModel) BackwardAlgorithm(observationSequence []int, beta [][]float64) {
 	for i := 0; i < len(hmm.Transitions); i++ {
-		beta[len(observationSequence)-1][i] = 1.0
+		beta[len(observationSequence)-1][i] = 0.0
 	}
 
 	// Recursion step
 	for t := len(observationSequence) - 2; t >= 0; t-- {
 		for i := 0; i < len(hmm.Transitions); i++ {
-			sum := 0.0
+			logSum := math.Inf(-1)
 			for j := 0; j < len(hmm.Transitions); j++ {
-				sum += hmm.Transitions[i][j] * hmm.Emissions[j][observationSequence[t+1]] * beta[t+1][j]
+				logSum = logAdd(logSum, math.Log(hmm.Transitions[i][j])+math.Log(hmm.Emissions[j][observationSequence[t+1]])+beta[t+1][j])
 			}
-			beta[t][i] = sum
+			beta[t][i] = logSum
 		}
 	}
 }
 
 func (hmm *HiddenMarkovModel) computeGamma(obs []int, alpha [][]float64, beta [][]float64, gamma [][]float64) {
 	for t := 0; t < len(obs); t++ {
-		sum := 0.0
+		sum := math.Inf(-1)
 		for i := 0; i < len(hmm.Transitions); i++ {
-			gamma[t][i] = alpha[t][i] * beta[t][i]
-			sum += gamma[t][i]
+			gamma[t][i] = alpha[t][i] + beta[t][i]
+			sum = logAdd(sum, gamma[t][i])
 		}
 
 		for i := 0; i < len(hmm.Transitions); i++ {
-			gamma[t][i] /= sum
+			gamma[t][i] -= sum
+			gamma[t][i] = math.Exp(gamma[t][i])
 		}
 	}
 }
 
 func (hmm *HiddenMarkovModel) computeXi(obs []int, alpha [][]float64, beta [][]float64, xi [][][]float64) {
 	for t := 0; t < len(obs)-1; t++ {
+		for i := 0; i < len(hmm.Transitions); i++ {
+			for j := 0; j < len(hmm.Transitions); j++ {
+				xi[t][i][j] = alpha[t][i] + math.Log(hmm.Transitions[i][j]) + math.Log(hmm.Emissions[j][obs[t+1]]) + beta[t+1][j]
+			}
+		}
+	}
+
+	for t := 0; t < len(obs)-1; t++ {
+		maxVal := math.Inf(-1)
+		for i := 0; i < len(hmm.Transitions); i++ {
+			for j := 0; j < len(hmm.Transitions); j++ {
+				if xi[t][i][j] > maxVal {
+					maxVal = xi[t][i][j]
+				}
+			}
+		}
+
 		sum := 0.0
 		for i := 0; i < len(hmm.Transitions); i++ {
 			for j := 0; j < len(hmm.Transitions); j++ {
-				xi[t][i][j] = alpha[t][i] * hmm.Transitions[i][j] * hmm.Emissions[j][obs[t+1]] * beta[t+1][j]
+				xi[t][i][j] = math.Exp(xi[t][i][j] - maxVal)
 				sum += xi[t][i][j]
 			}
 		}
+
 		for i := 0; i < len(hmm.Transitions); i++ {
 			for j := 0; j < len(hmm.Transitions); j++ {
 				xi[t][i][j] /= sum
@@ -164,12 +171,4 @@ func LaplaceSmoothing(emissionMatrix [][]float64) [][]float64 {
 		}
 	}
 	return smoothedMatrix
-}
-
-func sum(values []float64) float64 {
-	result := 0.0
-	for _, value := range values {
-		result += value
-	}
-	return result
 }

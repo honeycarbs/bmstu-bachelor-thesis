@@ -1,0 +1,14 @@
+---
+
+listen:
+  bind_ip: localhost
+  port: 8080
+db:
+  host: localhost
+  port: 5432
+  user: admin
+  password: admin
+  dbname: thesis
+  ssl_mode: disable
+cluster_amount: 5500
+kmeans_max_rounds: 50

@@ -10,7 +10,7 @@ type Client struct {
 	DB *sqlx.DB
 }
 
-func New(host, port, user, password, dbName, ssl string) (*Client, error) {
+func NewClient(host, port, user, password, dbName, ssl string) (*Client, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		host, port, user, dbName, password, ssl)
 

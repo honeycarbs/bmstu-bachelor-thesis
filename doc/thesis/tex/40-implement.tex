@@ -1,9 +1,986 @@
 \chapter{Технологический раздел}
-\section{Выбор средств программной реализации}
-\subsection{Выбор языка программирования}
-\subsection{Выбор СУБД}
-\subsection{Модули программного обеспечения}
-\subsection{Модуль получения вектора информативных признаков сигнала}
-\subsection{Модуль формирования вектора информативных признаков}
-\subsection{Модуль кластеризации}
-\subsection{Модуль создания и обучения скрытых марковских моделей}
+\section{Выбор средств реализации программного обеспечения}
+Программное обеспечение состоит из трех модулей: модуль выделения информативных признаков сигнала, модуль кластеризации и модуль создания и обучения скрытых марковских моделей. 
+
+Для модулей кластеризации и работы со скрытыми марковскими моделями был выбран язык Golang~\cite{golang}, поскольку процедура кластеризации и обучения скрытых марковских моделей предполагают работу с большими объемами данных. Golang имеет низкие накладные расходы на работу с памятью, что обеспечивает эффективную обработку с большими объемами данных.
+
+Модуль выделения информативных признаков в основном содержит работу с аудиофайлами, поэтому для реализации этого модуля был выбран язык Python~\cite{python}. Python имеет широкий спектр библиотек и инструментов для обработки звуковых сигналов, в том числе и для выделения мел-кепстральных коэффициентов.
+
+Для хранения и передачи данных между модулями было решено использовать реляционную базу данных. В качестве СУБД была выбрана PostgreSQL~\cite{postgresql}, поскольку языки Python и Golang, используемые для написания программного обеспечения, имеют встроенные пакеты работы с данной СУБД.
+
+В качестве средства развертывания программного обеспечения была выбрана утилита Docker \cite{docker}, поскольку она поддерживает микросервисную архитектуру: Docker обеспечивает возможность разделения приложения на отдельные сервисы, которые могут быть запущены в отдельных контейнерах. 
+
+%\subsection{Выбор СУБД}
+%Для хранения и передачи данных между модулями было решено использовать реляционную базу данных. В качестве СУБД была выбрана PostgreSQL~\cite{postgresql}, поскольку языки Python и Golang, используемые для написания программного обеспечения, имеют встроенные пакеты работы с данной СУБД.
+\section{Компоненты программного обеспечения} 
+\subsection{Формирование вектора информативных признаков}
+Сервис формирования вектора информативных признаков выполняет три основные задачи:
+\begin{itemize}
+	\item чтение файла разметки, предоставленного разработчиками корпуса DUSHA;
+	\item формирование вектора мел-кепстральных коэффициентов для каждого кадра аудиофайла, прочитанного из файла разметки;
+	\item запись информации об аудиофайлах, их кадрах и векторах мел-кепстральных коэффициентов в базу данных.
+\end{itemize}
+Задача чтения файла разметки выполняется классом DatasetProcessor, представленном на листинге \ref{lst:feature:dataset-processor}. В качестве аргументов конструктору класса предоставляется абсолютный путь до корпуса DUSHA в файловой системе компьютера и название файла, содержащего разметку.
+\begin{lstlisting}[
+	caption={Класс для чтения файла разметки},
+	label=lst:feature:dataset-processor,
+	language=Python]
+class DatasetProcessor:
+    def __init__(self, dataset_path, dataset_meta_file):
+        self._dataset_path = dataset_path
+        self._dataset_meta_file = dataset_meta_file
+
+        self.wavs = []
+        self._get_wavs()
+
+    def _get_wavs(self):
+        os.chdir(self._dataset_path)
+        with open(self._dataset_meta_file, 'r') as mf:
+            raw_data = list(mf)
+            for i, rec in enumerate(raw_data):
+                json_string = json.loads(rec)
+                json_string["audio_path"] =
+                	_resolve_absolute_path(json_string["audio_path"])
+                self.wavs.append(json_string)
+\end{lstlisting}
+Метод \_get\_wavs извлекает из файла разметки пути до аудиофайлов корпуса для дальнейшей работы с ними. В файле разметки присутствует относительный путь от самого файла разметки до аудиофайла корпуса, поэтому для чтения файла необходимо воссановить абсолютный путь аудиофайла корпуса. Это делает функция \_resolve\_absolute\_path.
+
+После того, как пути были извлечены из файла разметки, требуется обработать каждый аудиофайл -- открыть его, разделить на кадры и вычислить мел-кепстральные коэффициенты для каждого кадра аудиофайла. Для работы с аудиофайлами реализован модельный класс сущности <<Аудиофайл>>, представленный на листинге \ref{lst:feature:sample} и модельный класс сущности <<Кадр>>, представленный на листинге \ref{lst:feature:frame}.
+\begin{lstlisting}[
+	caption={Модельный класс сущности <<Аудиофайл>>},
+	label=lst:feature:sample,
+	language=Python]
+class Sample:
+    def __init__(self, uuid, audio_path, emo):
+        self.uuid = uuid
+        self.audio_path = audio_path
+        self.emo = emo
+
+    def __dict__(self):
+        return {
+            "uuid": self.uuid,
+            "audio_path": self.audio_path,
+            "emo": self.emo
+        }
+\end{lstlisting}
+
+\begin{lstlisting}[
+	caption={Модельный класс сущности <<Кадр>>},
+	label=lst:feature:frame,
+	language=Python]
+class Frame:
+    def __init__(self, sample_id, index, mfcc):
+        self.id = str(uuid.uuid4())
+        self.sample_id = sample_id
+        self.sample_num = index
+        self.mfcc = mfcc
+\end{lstlisting}
+
+Класс AudioFeaturesExtractor (листинг \ref{lst:feature:extractor}) выполняет функции разделения аудиофайла на кадры и вычисления мел-кепстральных коэффициентов для каждого кадра аудиофайла.
+\begin{lstlisting}[
+	caption={Класс для формирования вектора информативных признаков},
+	label=lst:feature:extractor,
+	language=Python]
+class AudioFeaturesExtractor:
+    def __init__(self, file_path, frame_length=0.02, hop_length=0.01):
+        sig, self.sampling_rate = librosa.load(file_path)
+
+        self.frame_length = int(self.sampling_rate * frame_length)
+        self.hop_length = int(hop_length * self.sampling_rate)
+
+        self.frames = librosa.util.frame(sig, frame_length=self.frame_length,
+        								 hop_length=self.hop_length)
+
+    def get_mfcc(self, n_mfcc=13):
+        mfcc = []
+        for frame in self.frames.T:
+            mfcc_per_frame = librosa.feature.mfcc(y=frame, 
+            					n_fft=self.frame_length, n_mfcc=n_mfcc)
+            mfcc.append(mfcc_per_frame.T)
+
+        return np.array(mfcc)
+\end{lstlisting}
+При обработке аудиофайла (чтение, деление на кадры и извлечение мел-кепстральных коэффициентов) была использована библиотека <<Librosa>> \cite{librosa}, предназначенная для анализа и обработки аудиофайлов. 
+
+Аргументами конструктора класса являются путь до аудиофайла в памяти компьютера, длина кадра и размер перекрытия. Метод get\_mfcc используется для извлечения вектора мел-кепстральных коэффициентов. Его аргументом является количество извлекаемых коэффициентов.
+
+Класс SampleRepository (листинг \ref{lst:feature:sample-repo}) реализует <<репозиторий>> сущности <<аудиофайл>>, инкапсулирующий способ хранения данных.
+\begin{lstlisting}[
+	caption={<<Репозиторий>> сущности <<Аудиофайл>>},
+	label=lst:feature:sample-repo,
+	language=Python]
+class SampleRepository(Repository):
+    def __init__(self, db_client):
+        self.db_client = db_client
+
+    def create(self, entity):
+        cursor = self.db_client.cnx.cursor()
+        query = f"INSERT INTO sample VALUES (%s, %s, %s)"
+        
+        cursor.execute(query, (entity.uuid, entity.audio_path, entity.emo))
+        self.db_client.cnx.commit()
+        
+        cursor.close()
+
+    def get(self):
+        cursor = self.db_client.cnx.cursor()
+        query = "SELECT uuid, audio_path, emotion FROM sample"
+        cursor.execute(query)
+
+        samples = []
+        for row in cursor.fetchall():
+            uuid, audio_path, emotion = row
+            sample = Sample(uuid, audio_path, emotion)
+            samples.append(sample)
+
+        cursor.execute(query)
+        self.db_client.cnx.commit()
+        
+        cursor.close()
+
+        return samples
+\end{lstlisting}
+Аналогично для сущности <<Кадр>> на листинге \ref{lst:feature:frame-repo} представлен класс FrameRepository, реализующий <<репозиторий>> сущности.
+\begin{lstlisting}[
+	caption={<<Репозиторий>> сущности <<Кадр>>},
+	label=lst:feature:frame-repo,
+	language=Python]
+class FrameRepository(Repository):
+    def __init__(self, db_client):
+        self.db_client = db_client
+
+    def create(self, entity):
+        self._create_frame(entity)
+        self._create_mfcc(entity.id, entity.mfcc)
+
+    def get(self):
+        pass
+
+    def _create_frame(self, frame):
+        cursor = self.db_client.cnx.cursor()
+        query = "INSERT INTO frame (uuid, sample_uuid, index) \
+        		 VALUES (%s, %s, %s)"
+        		 
+        values = (frame.id, frame.sample_id, frame.sample_num)
+
+        cursor.execute(query, values)
+        self.db_client.cnx.commit()
+        
+        cursor.close()
+
+    def _create_mfcc(self, frame_id, mfcc):
+        cursor = self.db_client.cnx.cursor()
+
+        for i, c in enumerate(mfcc):
+            query = "INSERT INTO mfcc (uuid, frame_uuid, index, value) \
+             		 VALUES (%s, %s, %s, %s)"
+            values = (str(uuid.uuid4()), frame_id, i + 1, c.item())
+            cursor.execute(query, values)
+            self.db_client.cnx.commit()
+
+        cursor.close()
+\end{lstlisting}
+Компонент формирования вектора информативных признаков представляет из себя веб-сервер, принимающий HTTP-запросы. Когда клиентское приложение обращается через метод <<POST>> на конечную точку <<\textit{/api/v1/samples}>>, сервер выполняет функцию чтения аудиофайлов из файла разметки, затем формирует векторы мел-кепстральных коэффициентов для каждого прочитанного аудиофайла и производит запись полученного набора векторов в базу данных для дальнейшего его использования другими компонентами ПО.
+
+\subsection{Кластеризация}
+Сервис кластеризации выполняет две основные задачи:
+\begin{itemize}
+	\item кластеризация векторов информативных признаков;
+	\item запись информации о кластерах и их центроидах в базу данных.
+\end{itemize}
+Функция KMeans, представленная на листинге \ref{lst:cluster:kmeans} в качестве входных данных принимает массив векторов информативных признаков каждого кадра каждого аудиофайла и возвращает массив центроидов кластеров, соответствующих этому набору.
+\begin{lstlisting}[
+	caption={Функция нахождения центроидов кластеров},
+	label=lst:cluster:kmeans]
+type Node []float64
+
+func KMeans(Nodes []Node, clusterCount int, maxRounds int) ([]Node, error) {
+    if len(Nodes) < clusterCount {
+        return nil, errors.New("amount of nodes is smaller than cluster count")
+    }
+
+    stdLen := 0
+    for i, Node := range Nodes {
+        curLen := len(Node)
+
+        if i > 0 && len(Node) != stdLen {
+            return nil, errors.New("data is not consistent dimension-wise")
+        }
+
+        stdLen = curLen
+    }
+
+    centroids := make([]Node, clusterCount)
+
+    r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+    for i := 0; i < clusterCount; i++ {
+        srcIndex := r.Intn(len(Nodes))
+        srcLen := len(Nodes[srcIndex])
+        centroids[i] = make(Node, srcLen)
+        copy(centroids[i], Nodes[r.Intn(len(Nodes))])
+    }
+
+    return initialCentroids(Nodes, maxRounds, centroids), nil
+}
+\end{lstlisting}
+Для создания общего массива векторов информативных признаков каждого кадра необходимо извлечь их из базы данных. Сервисная структура SampleService, представленная на листинге \ref{lst:cluster:sample-service} реализует эту логику. 
+\begin{lstlisting}[
+	caption={Функция нахождения центроидов кластеров},
+	label=lst:cluster:sample-service]
+type SampleService struct {
+    repo *postgres.SamplePostgres
+}
+
+func (s *SampleService) GetAll() ([]entity.Sample, error) {
+    var samples []entity.Sample
+
+    samples, err := s.repo.Get()
+    
+    if err != nil {
+        return nil, err
+    }
+
+    return samples, nil
+}
+
+func ... CollectAllFrames(samples []entity.Sample) ([]entity.Frame, error) {
+	
+	frames := make([]entity.Frame, 0)
+	
+	for i := 0; i < len(samples); i++ {
+		for j := 0; j < len(samples[i].Frames); j++ {
+			frames = append(frames, samples[i].Frames[j])
+		}
+	}
+	
+	return frames, nil
+}
+\end{lstlisting}
+Функции структуры оперируют модельной структурой Sample сущности <<аудиофайл>> (листинг \ref{lst:cluster:sample}), полям которой присвоены json-метки, указывающие на соответствие полей структуры полям таблицы аудиофайлов в базе данных.
+\begin{lstlisting}[
+	caption={Модельная структура сущности <<аудиофайл>>},
+	label=lst:cluster:sample]
+type Sample struct {
+    ID        string `db:"uuid"`
+    AudioPath string `db:"audio_path"`
+    Emotion   string `db:"emotion"`
+    Frames    []Frame
+}
+\end{lstlisting}
+Последнее поле модельной структуры -- кадры аудиофайла. На листинге \ref{lst:cluster:frame} представлена модельная структура сущности <<кадр>>, полям которых присвоены json-метки, указывающие на соответствие полей структуры полям таблицы кадров в базе данных.
+\begin{lstlisting}[
+	caption={Модельная структура сущности <<кадр>>},
+	label=lst:cluster:frame]
+type Frame struct {
+    ID           string `db:"uuid"`
+    SampleUUID   string `db:"sample_uuid"`
+    Index        int    `db:"index"`
+    ClusterIndex string `db:"cluster_uuid"`
+    MFCCs        []float64
+}
+\end{lstlisting}
+Каждая  используемая сущность имеет соответствующие репозитории. Поля обоих репозиториев -- клиентское соединение с базой данных PostgreSQL. На листинге \ref{lst:cluster:sample-repo} представлен репозиторий сущности <<аудиофайл>>.
+\begin{lstlisting}[
+	caption={Репозиторий сущности <<аудиофайл>>},
+	label=lst:cluster:sample-repo]
+type SamplePostgres struct {
+    db *sqlx.DB
+}
+
+func NewSamplePostgres(cli *psqlcli.Client) *SamplePostgres {
+	return &SamplePostgres{db: cli.DB}
+}
+
+func (s *SamplePostgres) Get() ([]entity.Sample, error) {
+    var samples []entity.Sample
+
+    err := s.db.Select(&samples,
+        `SELECT uuid, audio_path, emotion FROM sample`)
+    if err != nil {
+        return nil, err
+    }
+
+    return samples, nil
+}
+\end{lstlisting}
+Аналогичную структуру имеет репозиторий сущности <<кадр>>. Кроме операции чтения кадра, в репозитории присутствует логика записи информации о кластере в базу данных. На листинге \ref{lst:cluster:frame-repo} представлен фрагмент репозитория сущности <<кадр>>, выполняющий эту функцию.
+\begin{lstlisting}[
+	caption={Фрагмент репозитория сущности <<кадр>>},
+	label=lst:cluster:frame-repo]
+type FramePostgres struct {
+	db *sqlx.DB
+}
+
+func NewFramePostgres(cli *psqlcli.Client) *FramePostgres {
+	return &FramePostgres{db: cli.DB}
+}
+
+...
+
+func (f *FramePostgres) AssignCluster(clusterID, frameID string) error {
+	query := "UPDATE frame SET cluster_uuid = $1 WHERE uuid = $2"
+	_, err := f.db.Exec(query, clusterID, frameID)
+	
+	return err
+}
+\end{lstlisting}
+Кластер ставится в соответствие кадру в результате выполнения функции Nearest, представленной на листинге \ref{lst:cluster:nearest}.
+\begin{lstlisting}[
+	caption={Функция находления ближайшего кластера},
+	label=lst:cluster:nearest]
+func Nearest(in Node, nodes []Node) int {
+	count := len(nodes)
+	
+	results := make(Node, count)
+	cnt := make(chan int)
+	for i, node := range nodes {
+		go func(i int, node, cl Node) {
+			results[i] = distance(in, node)
+			cnt <- 1
+		}(i, node, in)
+	}
+	wait(cnt, results)
+	
+	minI := 0
+	curDist := results[0]
+	
+	for i, dist := range results {
+		if dist < curDist {
+			curDist = dist
+			minI = i
+		}
+	}
+	
+	return minI
+}
+\end{lstlisting}
+Функция Nearest оперирует индексами центроидов. При дальнейшей работе используется не целочисленный индекс, а соответствующие ему модельные структуры сущности <<кластер>> и сущности <<центроид>>. Модельная структура сущности <<кластер>> представлена на листинге \ref{lst:cluster:cluster}.
+\begin{lstlisting}[
+	caption={Модельная структура сущности <<кластер>>},
+	label=lst:cluster:cluster]
+type Cluster struct {
+    ID       string   `db:"uuid"`
+    Index    int      `db:"index"`
+    Centroid Centroid `db:"centroid_id"`
+}
+\end{lstlisting}
+Модельная структура сущности <<центроид>> представлена на листинге \ref{lst:cluster:centroid}.
+\begin{lstlisting}[
+	caption={Модельная структура сущности <<центроид>>},
+	label=lst:cluster:centroid]
+type Centroid struct {
+	ID    string    `db:"uuid"`
+	Value []float64 `db:"value"`
+}
+\end{lstlisting}
+Для записи данных о кластере в базу так же имеется соответствующий репозиторий, аналогичный репозиториям остальных сущностей. 
+
+Установка соответствия между центроидом кластера и его модельной структурой Cluster реализована в функции constructClusterData сервисного класса ClusterService, представленной на листинге \ref{lst:cluster:cluster-cluster-data}.
+\begin{lstlisting}[
+	caption={Установка соответствия между центроидом кластера и его модельной структурой},
+	label=lst:cluster:cluster-cluster-data]
+type ClusterService struct {
+	repo   *postgres.ClusterPostgres
+	logger logging.Logger
+}
+
+func ... constructClusterData(centroids []entity.Centroid) []entity.Cluster {
+    clusters := make([]entity.Cluster, len(centroids))
+    for i, centroid := range centroids {
+        clusters[i] = entity.Cluster{
+            ID:       uuid.New().String(),
+            Index:    i + 1,
+            Centroid: centroid,
+        }
+    }
+    return clusters
+}
+\end{lstlisting}
+Аналогичная функция представлена для установки соответствия между индексом центроида и его модельной структурой Centroid (листинг \ref{lst:cluster:cluster-centroid-data}).
+\begin{lstlisting}[
+	caption={Установка соответствия между индексом центроида и его модельной структурой},
+	label=lst:cluster:cluster-centroid-data]
+func ... constructCentroidsData(centroidsCoords []kmeans.Node) ... {
+    centroids := make([]entity.Centroid, len(centroidsCoords))
+    for i, centroid := range centroidsCoords {
+        centroids[i] = entity.Centroid{
+            ID:    uuid.New().String(),
+            Value: centroid,
+        }
+    }
+    return centroids
+}
+\end{lstlisting}
+Функция AssignClusters сервисного класса ClusterService реализует логику установки соответствия <<кадр-кластер>> (листинг \ref{lst:cluster:cluster-assign-clusters}).
+\begin{lstlisting}[
+	caption={Установка соответствия <<кадр-кластер>>},
+	label=lst:cluster:cluster-assign-clusters]
+func ... AssignClusters(frames []entity.Frame, nclusters, maxRounds int) ... {
+    nodes := s.collectFramesData(frames)
+    centroidsCoords, err := kmeans.KMeans(nodes, nclusters, maxRounds)
+    if err != nil {
+        return nil, err
+    }
+    centroids := s.constructCentroidsData(centroidsCoords)
+    return s.constructClusterData(centroids), nil
+}
+
+func ... collectFramesData(frames []entity.Frame) []kmeans.Node {
+    nodes := make([]kmeans.Node, len(frames))
+    for i, fm := range frames {
+        nodes[i] = fm.MFCCs
+    }
+    return nodes
+}
+\end{lstlisting}
+
+Для того, чтобы определить качество кластеризации рассчитывается коэффициент силуэта (листинг \ref{lst:cluster:silhouette}). Коэффициент силуэта является мерой качества кластеризации и принимает значения от -1 до 1, где более высокие значения указывают на более качественную кластеризацию. Значения близкие к -1 указывают на перекрытие кластеров, а отрицательные значения указывают на неправильную кластеризацию.
+\begin{lstlisting}[
+	caption={Определение коэффициента силуэта},
+	label=lst:cluster:silhouette]
+func SilhouetteCoefficient(observations []Node, centroids []Node) float64 {
+	numClusters := len(centroids)
+	numObservations := len(observations)
+	clusterAssignments, distances := assignToCluster(observations, centroids)
+	a := computeAScores(observations, clusterAssignments, distances)
+	b := computeBScores(observations, centroids, 
+			clusterAssignments, numClusters)
+	
+	var sumSC float64
+	for i := 0; i < numObservations; i++ {
+		if b[i] != 0 {
+			sc := (b[i] - a[i]) / math.Max(a[i], b[i])
+			sumSC += sc
+		}
+	}
+	if numObservations > 0 {
+		return sumSC / float64(numObservations)
+	} else {
+		return 0.0
+	}
+}
+\end{lstlisting}
+Функция вычисления индексов кластеров, к которым относится каждое наблюдение, представлена на листинге \ref{lst:cluster:silhouette-assign}.
+\begin{lstlisting}[
+	caption={Вычисления индексов кластеров для каждого наблюдения},
+	label=lst:cluster:silhouette-assign]
+func assignToCluster(obs []Node, centroids []Node) ([]int, [][]float64) {
+	...
+	for i := 0; i < numObservations; i++ {
+		distances[i] = make([]float64, numClusters)
+		for j := 0; j < numClusters; j++ {
+			distances[i][j] = distance(obs[i], centroids[j])
+		}
+		minDist := distances[i][0]
+		minIndex := 0
+		for j := 1; j < numClusters; j++ {
+			if distances[i][j] < minDist {
+				minDist = distances[i][j]
+				minIndex = j
+			}
+		}
+		clusterAssignments[i] = minIndex
+	}
+	return clusterAssignments, distances
+}
+\end{lstlisting}
+Функция принимает на вход набор наблюдений obs и набор центроидов centroids, и возвращает массив clusterAssignments с индексами кластеров, к которым были присвоены наблюдения, а также двумерный массив distances, содержащий расстояния между каждым наблюдением и каждым центроидом. Она используется для вычисления индексов кластеров, к которым каждое наблюдение относится, и расстояний между каждым наблюдением и каждым центроидом, что позволяет затем вычислить новые центроиды в функции updateCentroids.
+
+Вычисление значения $a(i)$ -- среднего расстояния между точкой $i$ и всеми другими точками из того же кластера происходит в функции computeAScores (листинг \ref{lst:cluster:silhouette-a})
+\begin{lstlisting}[
+	caption={Вычисления значения $a(i)$},
+	label=lst:cluster:silhouette-a]
+func computeAScores(observations []Node, clusterAssignments []int, 
+					distances [][]float64) []float64 {
+	numObservations := len(observations)
+	a := make([]float64, numObservations)
+	
+	for i := 0; i < numObservations; i++ {
+		clusterIndex := clusterAssignments[i]
+		
+		var sumDist float64
+		numSameCluster := 0
+		for j := 0; j < numObservations; j++ {
+			if clusterAssignments[j] == clusterIndex && i != j {
+				sumDist += distances[i][clusterIndex]
+				numSameCluster++
+			}
+		}
+		if numSameCluster > 0 {
+			a[i] = sumDist / float64(numSameCluster)
+		}
+	}
+	return a
+}
+\end{lstlisting}
+Конечный шаг для вычисления коэффициента силуэта -- это вычисление оценок $b(i)$ (листинг \ref{lst:cluster:silhouette-b}) для каждого i-го наблюдения. Для каждого i-го наблюдения вычисляется среднее расстояние между i и всеми точками в других кластерах. Минимальное среднее расстояние $b(i)$ затем используется для вычисления коэффициента силуэта.
+\begin{lstlisting}[
+	caption={Вычисления значения $b(i)$},
+	label=lst:cluster:silhouette-b]
+func computeBScores(observations []Node, centroids []Node, 
+					clusterAssignments []int, numClusters int) []float64 {
+	numObservations := len(observations)
+	distances := make([][]float64, numObservations)
+	for i := 0; i < numObservations; i++ {
+		distances[i] = make([]float64, numClusters)
+		for j := 0; j < numClusters; j++ {
+			distances[i][j] = distance(observations[i], centroids[j])
+		}
+	}
+	
+	b := make([]float64, numObservations)
+	for i := 0; i < numObservations; i++ {
+		clusterIndex := clusterAssignments[i]
+		minAvgDist := math.Inf(1)
+		for j := 0; j < numClusters; j++ {
+			if j != clusterIndex {
+				var sumDist float64
+				numOtherCluster := 0
+				for k := 0; k < numObservations; k++ {
+					if clusterAssignments[k] == j {
+						sumDist += distances[i][j]
+						numOtherCluster++
+					}
+				}
+				if numOtherCluster > 0 {
+					avgDist := sumDist / float64(numOtherCluster)
+					if avgDist < minAvgDist {
+						minAvgDist = avgDist
+					}
+				}
+			}
+		}
+		b[i] = minAvgDist
+	}
+	return b
+}
+
+\end{lstlisting}
+
+
+Компонент кластеризации также представляет из себя веб-сервер, принимающий HTTP-запросы. Обращение к нему осуществляется с использованием метода <<POST>> на конечную точку <<\textit{/api/v1/clusters}>>, в этом случае сервер выполняет функцию кластеризации и записи кластеров в базу данных для дальнейшей работы с ними.
+
+\subsection{Создание и обучение скрытых марковских моделей}
+Компонент создания и обучения скрытых марковских моделей выполняет три функции:
+\begin{itemize}
+	\item создание марковской модели для каждой эмоции;
+	\item обучение каждой скрытой марковской модели;
+	\item распознавание эмоций в аудиофайлах.
+\end{itemize}
+На листинге \ref{lst:ml:hmm-struct} представлена модельная структура скрытой марковской модели.
+\begin{lstlisting}[
+	caption={Модельная структура скрытой марковской модели},
+	label=lst:ml:hmm-struct]
+type HiddenMarkovModel struct {
+    Transitions             [][]float64 `json:"transitions"`
+    Emissions               [][]float64 `json:"emissions"`
+    StationaryProbabilities []float64   `json:"stationary_probabilities"`
+}
+\end{lstlisting}
+Обучение скрытой марковской модели с использованием алгоритма Баума---Велша основано на принципе EM (\textit{англ. expectation-maximization}), поэтому изначально матрицы скрытой марковской модели инициализируются случайным образом (Е-этап). Функция allocateRandomMatrix (листинг \ref{lst:ml:hmm-gen}) создает матрицы, заполненные случайными вероятностями.
+\begin{lstlisting}[
+caption={Создание матриц со случайными вероятностями},
+label=lst:ml:hmm-gen]
+func allocateRandomMatrix(n, m int, seed *rand.Rand) [][]float64 {
+	matrix := make([][]float64, n)
+	for i := range matrix {
+		matrix[i] = make([]float64, m)
+		sum := 0.0
+		for j := range matrix[i] {
+			matrix[i][j] = seed.Float64()
+			sum += matrix[i][j]
+		}
+		for j := range matrix[i] {
+			matrix[i][j] /= sum
+		}
+	}
+	
+	return matrix
+}
+\end{lstlisting}
+
+
+На листинге \ref{lst:ml:hmm-init} представлена случайная инициализация матриц скрытой марковской модели.
+\begin{lstlisting}[
+	caption={Создание скрытой марковской модели},
+	label=lst:ml:hmm-init]
+func New(nStates, nObs int) *HiddenMarkovModel {
+    seed := rand.New(rand.NewSource(0))
+    emitProb := allocateRandomMatrix(nStates, nObs, seed)
+    transProb := allocateRandomMatrix(nStates, nStates, seed)
+    initProb := make([]float64, nStates)
+    sum := 0.0
+    for i := range initProb {
+        initProb[i] = seed.Float64()
+        sum += initProb[i]
+    }
+    for i := range initProb {
+        initProb[i] /= sum
+    }
+    return &HiddenMarkovModel{
+        Transitions:             transProb,
+        Emissions:               emitProb,
+        StationaryProbabilities: initProb,
+    }
+}
+\end{lstlisting}
+
+
+Для обучения скрытой марковской модели требуется прочитать данные об аудиофайлах и их кадрах из базы данных. Репозиторий сущности <<аудиофайл>> идентичен \ref{lst:cluster:sample-repo}, модельная структура идентична \ref{lst:cluster:sample}. Однако, в модельной структуре сущности <<фрейм>> (листинг \ref{lst:ml:frame}) присутствуют не значения мел-кепстральных коэффициентов, а индексы кластеров, к которым принадлежит соответствующий набор значений мел-кепстральных коэффициентов. 
+\begin{lstlisting}[
+	caption={Модельная структура сущности <<кадр>>},
+	label=lst:ml:frame]
+type Frame struct {
+	ID           string `db:"uuid"`
+	SampleID     string `db:"sample_uuid"`
+	Index        int    `db:"frame_index"`
+	ClusterIndex int    `db:"cluster_index"`
+}
+\end{lstlisting}
+Поле Frames модельной структуры Sample содержит последовательность индексов наблюдаемых кластеров. В дальнейшем эта последовательность будет использована как входные данные для алгоритмов обучения и распознавания. Создание последовательности наблюдений осуществляется в функции ConstructObservationSequence сервисного класса SampleService (листинг \ref{lst:ml:construct-obs}).
+
+\begin{lstlisting}[
+	caption={Создание последовательности наблюдений},
+	label=lst:ml:construct-obs]
+func ... ConstructObservationSequence(sample entity.Sample) []int {
+	observations := make([]int, len(sample.Frames))
+	for i := 0; i < len(observations); i++ {
+		observations[i] = sample.Frames[i].ClusterIndex - 1
+	}
+	return observations
+}
+\end{lstlisting}
+Скрытая марковская модель, в качестве состояний использует кластеры, полученные в компоненте кластеризации. Кластеров при обработке большого количества данных может получиться много, поэтому вероятности нахождения скрытой марковской модели в заданном состоянии могут быть небольшими и, следовательно, при их перемножении может возникнуть проблема с числовой точностью.
+
+Процедура прямого прохода, вычисления в которой производятся в логарифмической шкале для предотвращения проблем с числовой точностью, представлена на листинге \ref{lst:ml:forfard}.
+\begin{lstlisting}[
+	caption={Процедура прямого прохода},
+	label=lst:ml:forfard]
+func ... ForwardAlgorithm(obs []int, alpha [][]float64) float64 {
+	for i := 0; i < len(hmm.Transitions); i++ {
+		alpha[0][i] = math.Log(hmm.StationaryProbabilities[i]) +
+		math.Log(hmm.Emissions[i][obs[0]])
+	}
+	for t := 1; t < len(obs); t++ {
+		for j := 0; j < len(hmm.Transitions); j++ {
+			sum := math.Inf(-1)
+			for i := 0; i < len(hmm.Transitions); i++ {
+				sum = logAdd(sum, alpha[t-1][i] + 
+				math.Log(hmm.Transitions[i][j]))
+			}
+			alpha[t][j] = sum + math.Log(hmm.Emissions[j][obs[t]])
+		}
+	}
+	logLikelihood := math.Inf(-1)
+	for i := 0; i < len(hmm.Transitions); i++ {
+		logLikelihood = logAdd(logLikelihood, alpha[len(obs)-1][i])
+	}
+	return logLikelihood
+}
+\end{lstlisting}
+
+
+
+%Скрытая марковская модель, используемая при решении поставленной задачи, в качестве состояний использует кластеры, полученные в компоненте кластеризации. Вероятности нахождения скрытой марковской модели в заданном состоянии могут быть настолько небольшими, что при их перемножении может возникнуть проблема с числовой точностью. Для того, чтобы ее избежать, было принято решение перевести вероятности в логарифмическую шкалу. 
+
+% Скрытая марковская модель, в качестве состояний использует кластеры, полученные в компоненте кластеризации. Кластеров при обработке большого количества данных может получиться большое количество, поэтому вероятности нахождения скрытой марковской модели в заданном состоянии могут быть небольшими и, следовательно, при их перемножении может возникнуть проблема с числовой точностью.
+
+%Процедура прямого прохода представлена на листинге \ref{lst:ml:forfard}.
+%\begin{lstlisting}[
+%	caption={Процедура прямого прохода},
+%	label=lst:ml:forfard]
+%func ... ForwardAlgorithm(obs []int, alpha [][]float64) float64 {
+%	for i := 0; i < len(hmm.Transitions); i++ {
+%		alpha[0][i] = math.Log(hmm.StationaryProbabilities[i]) +
+%					  math.Log(hmm.Emissions[i][obs[0]])
+%	}
+%	
+%	for t := 1; t < len(obs); t++ {
+%		for j := 0; j < len(hmm.Transitions); j++ {
+%			sum := math.Inf(-1)
+%			for i := 0; i < len(hmm.Transitions); i++ {
+%				sum = logAdd(sum, alpha[t-1][i] + 
+%							 math.Log(hmm.Transitions[i][j]))
+%			}
+%		
+%			alpha[t][j] = sum + math.Log(hmm.Emissions[j][obs[t]])
+%		}
+%	}
+%	
+%	logLikelihood := math.Inf(-1)
+%	for i := 0; i < len(hmm.Transitions); i++ {
+%		logLikelihood = logAdd(logLikelihood, alpha[len(obs)-1][i])
+%	}
+%
+%	return logLikelihood
+%}
+%\end{lstlisting}
+%
+%
+%
+Процедура обратного прохода представлена на листинге \ref{lst:ml:backward}. Как и в случае процедуры прямого прохода, вычисления осуществляются в логарифмической шкале. 
+\begin{lstlisting}[
+	caption={Процедура обратного прохода},
+	label=lst:ml:backward]
+func ... BackwardAlgorithm(obs []int, beta [][]float64) {
+	for i := 0; i < len(hmm.Transitions); i++ {
+		beta[len(obs)-1][i] = 0.0
+	}
+	
+	for t := len(obs) - 2; t >= 0; t-- {
+		for i := 0; i < len(hmm.Transitions); i++ {
+			logSum := math.Inf(-1)
+			
+			for j := 0; j < len(hmm.Transitions); j++ {
+				logSum = logAdd(logSum,
+				math.Log(hmm.Transitions[i][j]) + 
+						 math.Log(hmm.Emissions[j][obs[t+1]])+beta[t+1][j])
+			}
+		
+			beta[t][i] = logSum
+		}
+	}
+}
+\end{lstlisting}
+
+Вычисление $\gamma$-вероятностей представлен на листинге \ref{lst:ml:gamma}.
+\begin{lstlisting}[
+	caption={Вычисление $\gamma$-вероятностей},
+	label=lst:ml:gamma]
+func ... computeGamma(obs []int, alpha [][]float64, 
+					  beta [][]float64, gamma [][]float64) {
+	for t := 0; t < len(obs); t++ {
+			sum := math.Inf(-1)
+			
+			for i := 0; i < len(hmm.Transitions); i++ {
+					gamma[t][i] = alpha[t][i] + beta[t][i]
+					sum = logAdd(sum, gamma[t][i])
+				}
+			
+			for i := 0; i < len(hmm.Transitions); i++ {
+					gamma[t][i] -= sum
+					gamma[t][i] = math.Exp(gamma[t][i])
+				}
+		}
+}
+\end{lstlisting}
+$\alpha$, $\beta$ и $\gamma$ вероятности используются при вычислении $\xi$-вероятностей. Вычисление $\xi$-вероятностей представлено на листинге  \ref{lst:ml:xi}.
+\begin{lstlisting}[
+	caption={Вычисление $\xi$-вероятностей},
+	label=lst:ml:xi]
+func (hmm *HiddenMarkovModel) computeXi(obs []int, alpha [][]float64, 
+										beta [][]float64, xi [][][]float64) {
+	for t := 0; t < len(obs)-1; t++ {
+		for i := 0; i < len(hmm.Transitions); i++ {
+			for j := 0; j < len(hmm.Transitions); j++ {
+				xi[t][i][j] = alpha[t][i] + math.Log(hmm.Transitions[i][j]) +
+					math.Log(hmm.Emissions[j][obs[t+1]]) + beta[t+1][j]
+			}
+		}
+	}
+	
+	for t := 0; t < len(obs)-1; t++ {
+		maxVal := math.Inf(-1)
+		for i := 0; i < len(hmm.Transitions); i++ {
+			for j := 0; j < len(hmm.Transitions); j++ {
+				if xi[t][i][j] > maxVal {
+					maxVal = xi[t][i][j]
+				}
+			}
+		}
+		
+		sum := 0.0
+		
+		for i := 0; i < len(hmm.Transitions); i++ {
+			for j := 0; j < len(hmm.Transitions); j++ {
+				xi[t][i][j] = math.Exp(xi[t][i][j] - maxVal)
+				
+				sum += xi[t][i][j]
+			}
+		}
+		
+		for i := 0; i < len(hmm.Transitions); i++ {
+			for j := 0; j < len(hmm.Transitions); j++ {
+				xi[t][i][j] /= sum
+			}
+		}
+	}
+}
+\end{lstlisting}
+$\alpha$, $\beta$, $\gamma$ и $\xi$ вероятности используются при обучении, или корректировке матриц скрытой марковской модели. Алгоритм Баума-Велша (листинг \ref{lst:ml:baum-welch}), выполняющий корректировку матриц модели, принимает в качестве входных данных массив индексов кластеров и количество итераций корректирования матриц. 
+%Алгоритм Баума-Велша (листинг \ref{lst:ml:baum-welch}) принимает в качестве входных данных массив индексов кластеров и количество итераций корректирования матриц. 
+\begin{lstlisting}[
+	caption={Алгоритм Баума-Велша},
+	label=lst:ml:baum-welch]
+func ... BaumWelch(observationSequence []int, iterations int) {
+	var (
+		alpha = make([][]float64, len(observationSequence))
+		beta  = make([][]float64, len(observationSequence))
+		gamma = make([][]float64, len(observationSequence))
+		xi    = make([][][]float64, len(observationSequence)-1)
+	)
+	
+	for i := 0; i < len(observationSequence); i++ {
+		alpha[i] = make([]float64, len(hmm.Transitions))
+		beta[i] = make([]float64, len(hmm.Transitions))
+		gamma[i] = make([]float64, len(hmm.Transitions))
+		
+		if i < len(observationSequence)-1 {
+			xi[i] = make([][]float64, len(hmm.Transitions))
+			
+			for j := 0; j < len(hmm.Transitions); j++ {
+				xi[i][j] = make([]float64, len(hmm.Transitions))
+			}
+		}
+	}
+	
+	hmm.Emissions = LaplaceSmoothing(hmm.Emissions)
+	
+	for it := 0; it < iterations; it++ {
+		hmm.ForwardAlgorithm(observationSequence, alpha)
+		hmm.BackwardAlgorithm(observationSequence, beta)
+		hmm.computeGamma(observationSequence, alpha, beta, gamma)
+		hmm.computeXi(observationSequence, alpha, beta, xi)
+		
+		// Update the model parameters
+		hmm.update(observationSequence, gamma, xi)
+	}
+}
+\end{lstlisting}
+
+Для избежания появления нулей в матрице эмиссий скрытой марковской модели перед первой итерацией алгоритма Баума-Велша следует использовать сглаживание. В качестве метода сглаживания был выбран метод сглаживания Лапласа \cite{smooting}.
+
+Сглаживания Лапласа заключается в добавлении к каждому элементу матрицы эмиссий некоторого малого значения. В данном случае к каждому элементу строки добавляется единица и затем каждая строка матрицы нормализуется. Функция, выполняющая сглаживание Лапласа, представлена на листинге \ref{lst:ml:smoothing}.
+\begin{lstlisting}[
+	caption={сглаживание Лапласа},
+	label=lst:ml:smoothing]
+func LaplaceSmoothing(emissionMatrix [][]float64) [][]float64 {
+	
+	rows := len(emissionMatrix)
+	cols := len(emissionMatrix[0])
+	
+	smoothedMatrix := make([][]float64, rows)
+	
+	for i := 0; i < rows; i++ {
+		smoothedMatrix[i] = make([]float64, cols)
+		
+		for j := 0; j < cols; j++ {
+			smoothedMatrix[i][j] = (emissionMatrix[i][j] + 1) /
+				(sum(emissionMatrix[i]) + float64(cols))
+		}
+	}
+
+	return smoothedMatrix
+}
+\end{lstlisting}
+Обученные марковские модели решено хранить в JSON-файле. Для каждой эмоции, присутствующей в разметке, создается отдельная скрытая марковская модель. Функция записи матриц скрытой марковской модели в файл представлена на листинге \ref{lst:ml:save-json}.
+\begin{lstlisting}[
+	caption={Запись матриц скрытой марковской модели в файл},
+	label=lst:ml:save-json]
+func (hmm *HiddenMarkovModel) SaveJSON(filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(hmm); err != nil {
+		return err
+	}
+	
+	return nil
+}
+\end{lstlisting}
+
+Во время первого запуска скрытые марковские модели инициализируются случайным образом (листинг \ref{lst:ml:hmm-init}). Для каждого последующего запуска значения скрытой марковской модели прочитываются из JSON-файла. Функция чтения матриц марковской модели представлена на листинге \ref{lst:ml:load-json}.
+\begin{lstlisting}[
+	caption={Чтение матриц скрытой марковской модели из файла},
+	label=lst:ml:load-json]
+func LoadJSON(filename string) (HiddenMarkovModel, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return HiddenMarkovModel{}, err
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	
+	var hmm HiddenMarkovModel
+	if err := decoder.Decode(&hmm); err != nil {
+		return HiddenMarkovModel{}, err
+	}
+	
+	return hmm, nil
+}
+\end{lstlisting}
+Наиболее вероятную эмоцию можно получить после запуска алгоритма прямого хода. В нем вычисляется вероятность наблюдать представленную на вход алгоритма последовательность, при условии заданной модели. Эта вероятность называется вероятностью наблюдения. Вычисление вероятности наблюдения представлено на листинге \ref{lst:ml:forfard} в строках 17-22.
+
+Из вычисленных вероятностей наблюдения выбирается максимальная. Скрытая марковская модель, которой принадлежит максимальная вероятность наблюдения считается подходящей для входной последовательности и эмоция, на которой была обучена эта модель, считается наиболее вероятной.
+
+Интерфейс клиентского приложения состоит из одной веб-страницы, на которой отображается матрица ошибок. Матрица ошибок (\textit{англ. confusion matrix}) представляет собой таблицу, в которой каждая строка соответствует истинному классу объектов, а каждый столбец -- прогнозируемому классу. Матрица ошибок позволяет проанализировать результаты работы алгоритма обучения скрытой марковской модели, сравнивая прогнозируемые и фактические значения. В ячейках таблицы указано количество аудиофайлов, которым в результате алгоритма была присвоена та или иная эмоция. Обычно матрица -- это квадратная таблица, где диагональные элементы соответствуют правильно классифицированным объектам, а элементы вне диагонали -- неправильно классифицированным объектам. На листинге \ref{lst:ml:cm} представлена инициализация матрицы ошибок с использованием истинных и спрогнозированных значений разметки.
+\begin{lstlisting}[
+	caption={Инициализация матрицы ошибок},
+	label=lst:ml:cm]
+func NewConfusionMatrix(labels []entity.Label, actual,
+						predicted []entity.Label) *ConfusionMatrix {
+	confusionMatrix := make(map[entity.Label]map[entity.Label]float64)
+	for _, ac := range labels {
+		confusionMatrix[ac] = make(map[entity.Label]float64)
+		for _, pred := range labels {
+			confusionMatrix[ac][pred] = 0.
+		}
+	}
+
+	for i := 0; i < len(actual); i++ {
+		confusionMatrix[actual[i]][predicted[i]]++
+	}
+	
+	return &ConfusionMatrix{labels: labels, Values: confusionMatrix}
+}
+\end{lstlisting}
+
+Нормализованная матрица ошибок обычно представляется в виде процентных значений или долей. На листинге \ref{lst:ml:cm-norm} представлена нормализация матрицы ошибок.
+\begin{lstlisting}[
+	caption={Нормализация матрицы ошибок},
+	label=lst:ml:cm-norm]
+func (m *ConfusionMatrix) Normalize() {
+	numClasses := len(m.labels)
+	
+	rowSums := make([]float64, numClasses)
+	totalSum := 0.0
+	for i, actualLabel := range m.labels {
+		for _, predictedLabel := range m.labels {
+			rowSums[i] += m.Values[actualLabel][predictedLabel]
+			totalSum += m.Values[actualLabel][predictedLabel]
+		}
+	}
+
+	normConfusionMatrix := make(map[entity.Label]map[entity.Label]float64)
+	
+	for i, actualLabel := range m.labels {
+		normConfusionMatrix[actualLabel] = make(map[entity.Label]float64)
+		for _, predictedLabel := range m.labels {
+			normConfusionMatrix[actualLabel][predictedLabel] = 
+				m.Values[actualLabel][predictedLabel] / rowSums[i]
+		}
+	}
+	m.Values = normConfusionMatrix
+}
+\end{lstlisting}
+
+Компонент создания и обучения марковских моделей, как и два предыдущих, представляет из себя веб-сервер, принимающий HTTP-запросы. Обращение к нему осуществляется с использованием метода <<POST>> на конечные точки <<\textit{/api/v1/train}>> и <<\textit{/api/v1/test}>>, осуществляющие процедуры обучения и проверки соответственно.
+
+\section{Тестирование компонент программного обеспечения}
+
+
+\section{Формат входных и выходных данных}
+%Компонент формирования вектора информативных признаков принимает в качестве входных данных конфигурационный файл формата <<yaml>> \cite{yaml}, содержащий следующие поля:
+%\begin{itemize}
+%	\item
+%	\item
+%	\item
+%	\item
+%	\item
+%\end{itemize}   

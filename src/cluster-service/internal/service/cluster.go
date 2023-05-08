@@ -4,27 +4,30 @@ import (
 	"cluster/internal/entity"
 	"cluster/internal/repository/postgres"
 	"cluster/pkg/kmeans"
-	"fmt"
+	"cluster/pkg/logging"
 	"github.com/google/uuid"
 )
 
 type ClusterService struct {
-	repo *postgres.ClusterPostgres
+	repo   *postgres.ClusterPostgres
+	logger logging.Logger
 }
 
-func NewClusterService(repo *postgres.ClusterPostgres) *ClusterService {
-	return &ClusterService{repo: repo}
+func NewClusterService(repo *postgres.ClusterPostgres, logger logging.Logger) *ClusterService {
+	return &ClusterService{repo: repo, logger: logger}
 }
 
 func (s *ClusterService) AssignClusters(frames []entity.Frame, nclusters, maxRounds int) ([]entity.Cluster, error) {
 	nodes := s.collectFramesData(frames)
+	s.logger.Infof("collected %v frames", len(nodes))
 	centroidsCoords, err := kmeans.KMeans(nodes, nclusters, maxRounds)
 	if err != nil {
 		return nil, err
 	}
+	s.logger.Infof("constructed %v centroids", len(centroidsCoords))
 
 	centroids := s.constructCentroidsData(centroidsCoords)
-	fmt.Printf("Silhouette coefficient is: %v\n", kmeans.SilhouetteCoefficient(nodes, centroidsCoords))
+	s.logger.Infof("Silhouette coefficient is: %v\n", kmeans.SilhouetteCoefficient(nodes, centroidsCoords))
 	return s.constructClusterData(centroids), nil
 }
 

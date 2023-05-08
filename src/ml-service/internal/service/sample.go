@@ -14,8 +14,25 @@ func NewSampleService(sampleRepo *postgres.SamplePostgres, frameRepo *postgres.F
 	return &SampleService{sampleRepo: sampleRepo, frameRepo: frameRepo}
 }
 
-func (s *SampleService) GetByLabel(label entity.Label) ([]entity.Sample, error) {
-	samples, err := s.sampleRepo.GetByLabel(label)
+func (s *SampleService) GetByLabelTrain(label entity.Label) ([]entity.Sample, error) {
+	samples, err := s.sampleRepo.GetByLabelTrain(label)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < len(samples); i++ {
+		frames, err := s.frameRepo.GetBySample(samples[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		samples[i].Frames = frames
+	}
+
+	return samples, nil
+}
+
+func (s *SampleService) GetByLabelTest(label entity.Label) ([]entity.Sample, error) {
+	samples, err := s.sampleRepo.GetByLabelTrain(label)
 	if err != nil {
 		panic(err)
 	}

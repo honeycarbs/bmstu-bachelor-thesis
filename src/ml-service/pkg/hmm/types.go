@@ -15,7 +15,7 @@ func New(nStates, nObs int) *HiddenMarkovModel {
 	transProb := allocateRandomMatrix(nStates, nStates, seed)
 
 	initProb := make([]float64, nStates)
-	sum := 0.0
+	sum := 0.
 	for i := range initProb {
 		initProb[i] = seed.Float64()
 		sum += initProb[i]

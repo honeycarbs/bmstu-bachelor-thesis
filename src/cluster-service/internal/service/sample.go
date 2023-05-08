@@ -25,14 +25,10 @@ func (s *SampleService) GetAll() ([]entity.Sample, error) {
 }
 
 func (s *SampleService) CollectAllFrames(samples []entity.Sample) ([]entity.Frame, error) {
-	framesLength := len(samples) * len(samples[0].Frames)
-
-	frames := make([]entity.Frame, framesLength)
-	index := 0
+	frames := make([]entity.Frame, 0)
 	for i := 0; i < len(samples); i++ {
 		for j := 0; j < len(samples[i].Frames); j++ {
-			frames[index] = samples[i].Frames[j]
-			index++
+			frames = append(frames, samples[i].Frames[j])
 		}
 	}
 

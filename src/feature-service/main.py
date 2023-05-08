@@ -1,7 +1,9 @@
 import logging
 import os
+import sys
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from config.core import Config
@@ -12,6 +14,12 @@ from service.sample import SampleService
 
 from repository.sample.core import SampleRepository
 from repository.frame.core import FrameRepository
+
+
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+]
 
 
 if __name__ == '__main__':
@@ -28,6 +36,9 @@ if __name__ == '__main__':
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
+    sh = logging.StreamHandler(sys.stdout)
+    logger.addHandler(sh)
+
     db_conn = PostgresqlClient(config.PSQL_USER, config.PSQL_PASSWORD, config.PSQL_DATABASE)
     #
     sample_repository = SampleRepository(db_conn)
@@ -35,11 +46,20 @@ if __name__ == '__main__':
 
     sample_service = SampleService(sample_repository, frame_repository,
                                    config.DATASET_PATH,
-                                   config.DATASET_METAFILE,
                                    logger)
 
+    logger.info("service initialized")
     app = FastAPI()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     sample_handler = SampleHTTPRequestHandler(sample_service, logger)
     app.include_router(sample_handler.router)
+    logger.info("handler registered")
 
     uvicorn.run(app, host=config.APP_HOST, port=config.APP_PORT)

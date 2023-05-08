@@ -11,5 +11,5 @@ type FrameRepository interface {
 }
 
 type SampleRepository interface {
-	GetByLabel(label entity.Label) ([]entity.Sample, error)
+	GetByLabelTrain(label entity.Label) ([]entity.Sample, error)
 }

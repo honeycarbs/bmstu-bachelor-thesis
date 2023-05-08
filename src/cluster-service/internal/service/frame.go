@@ -38,7 +38,6 @@ func (s *FrameService) AssignCluster(frame entity.Frame, clusters []entity.Clust
 		centroids[i] = cluster.Centroid.Value
 	}
 	nearestIndex := kmeans.Nearest(frame.MFCCs, centroids)
-	//fmt.Printf("Nearest cluster index: %v", nearestIndex)
 	nearest := clusters[nearestIndex]
 
 	return s.repo.AssignCluster(nearest.ID, frame.ID)

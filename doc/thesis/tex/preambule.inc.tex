@@ -180,17 +180,19 @@
 %\newenvironment{code}{\captionsetup{type=listing}}{}
 \renewcommand{\lstlistingname}{Листинг}
 
-\newcommand{\commentfont}{\fontfamily{pcr}}
+\newcommand{\codefont}{\fontfamily{pcr}}
+\newcommand{\keywordsfont}{\fontfamily{pcr}\bfseries}
 
 \usepackage{listings-golang} % import this package after listings
 %\usepackage{minted}
 \lstset{
-	basicstyle=\fontfamily{pcr}\footnotesize,
+	basicstyle=\codefont\footnotesize,
+	keywordstyle=\keywordsfont\color{black},
 	numbers=left,
-	numberstyle=\fontfamily{pcr}\tiny\color{black},
+	numberstyle=\fontfamily{pcr}\tiny,
+	showstringspaces=false,
 	numbersep=10pt,
 	tabsize=4,
-	keywordstyle=\fontfamily{pcr}\bfseries\color{black},
 	frame=tblr,	
 	xleftmargin=20pt,
 	framexleftmargin=20pt,
@@ -213,7 +215,7 @@
 \SetKwFor{For}{цикл}{выполнять}{конец$\;$цикла} % очевидный и невероятный костыль
 \SetKwFor{ForEach}{для каждого}{выполнять}{конец цикла}
 \SetKwRepeat{Repeat}{повторять}{до тех пор, пока}
-\SetAlgorithmName{Алгоритм}{алгоритм}{Список алгоритмов}
+\SetAlgorithmName{Листинг}{алгоритм}{Список алгоритмов}
 
 % ----------------------------------------- BIBLIO ---------------------------------------
 

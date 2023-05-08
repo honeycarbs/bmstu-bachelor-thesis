@@ -6,11 +6,6 @@ import (
 	"ml/pkg/psqlcli"
 )
 
-type coeff struct {
-	Index int
-	Value float64
-}
-
 type FramePostgres struct {
 	db *sqlx.DB
 }

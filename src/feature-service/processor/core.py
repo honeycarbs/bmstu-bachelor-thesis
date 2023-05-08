@@ -9,14 +9,17 @@ def _resolve_absolute_path(wav_path):
 
 
 class DatasetProcessor:
-    def __init__(self, dataset_path, dataset_meta_file):
+    def __init__(self, dataset_path):
         self._dataset_path = dataset_path
-        self._dataset_meta_file = dataset_meta_file
+        self._dataset_meta_file = ""
 
         self.wavs = []
-        self._get_wavs()
+        # self._get_wavs()
 
-    def _get_wavs(self):
+    def set_metafile(self, dataset_metafile):
+        self._dataset_meta_file = dataset_metafile
+
+    def get_wavs(self):
         os.chdir(self._dataset_path)
         with open(self._dataset_meta_file, 'r') as mf:
             raw_data = list(mf)

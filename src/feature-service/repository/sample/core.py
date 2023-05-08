@@ -8,20 +8,20 @@ class SampleRepository(Repository):
 
     def create(self, entity):
         cursor = self.db_client.cnx.cursor()
-        query = f"INSERT INTO sample VALUES (%s, %s, %s)"
-        cursor.execute(query, (entity.uuid, entity.audio_path, entity.emo))
+        query = f"INSERT INTO sample (uuid, audio_path, emotion, batch) VALUES (%s, %s, %s, %s)"
+        cursor.execute(query, (entity.uuid, entity.audio_path, entity.emotion, entity.batch))
         self.db_client.cnx.commit()
         cursor.close()
 
     def get(self):
         cursor = self.db_client.cnx.cursor()
-        query = "SELECT uuid, audio_path, emotion FROM sample"
+        query = "SELECT uuid, audio_path, emotion, batch FROM sample"
         cursor.execute(query)
 
         samples = []
         for row in cursor.fetchall():
-            uuid, audio_path, emotion = row
-            sample = Sample(uuid, audio_path, emotion)
+            uuid, audio_path, emotion, batch = row
+            sample = Sample(uuid, audio_path, emotion, batch)
             samples.append(sample)
 
         cursor.execute(query)

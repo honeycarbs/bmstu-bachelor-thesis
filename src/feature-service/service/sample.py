@@ -7,22 +7,32 @@ from extractor.core import AudioFeaturesExtractor
 # TODO: add logger
 class SampleService:
 
-    def __init__(self, sample_repository, frame_repository, dataset_absolute_path, dataset_metafile, logger):
+    def __init__(self, sample_repository, frame_repository, dataset_absolute_path, logger):
         self._sample_repository = sample_repository
         self._frame_repository = frame_repository
-        self._init_dataset_processor(dataset_absolute_path, dataset_metafile)
+        self._init_dataset_processor(dataset_absolute_path)
         self._logger = logger
 
-    def _init_dataset_processor(self, _dataset_absolute_path, _dataset_metafile):
+    def _init_dataset_processor(self, _dataset_absolute_path):
         self.dataset_processor = DatasetProcessor(
-            _dataset_absolute_path,
-            _dataset_metafile)
+            _dataset_absolute_path)
+
+    def set_dataset_metafile(self, dataset_metafile):
+        self.dataset_processor.set_metafile(dataset_metafile)
 
     def create(self):
+        self.dataset_processor.get_wavs()
+
+        samples = []
+        self._logger.info(f"red {len(self.dataset_processor.wavs)} wavs from file")
         for i, wav in enumerate(self.dataset_processor.wavs):
-            sample = Sample(wav["uuid"], wav["audio_path"], wav["emotion"])
+            sample = Sample(wav["uuid"], wav["audio_path"], wav["emotion"], wav["batch"])
+
+            self._logger.info(sample.__dict__())
             self._sample_repository.create(sample)
-            self._logger.debug(f"created frame {i} out of {len(self.dataset_processor.wavs)}")
+                
+            samples.append(sample)
+            self._logger.info(f"created frame {i} out of {len(self.dataset_processor.wavs)}")
 
             audio_extractor = AudioFeaturesExtractor(file_path=sample.audio_path)
             mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
@@ -32,6 +42,8 @@ class SampleService:
                 mfcc = mfcc_features[j][0]
                 frame = Frame(sample.uuid, j + 1, mfcc)
                 self._frame_repository.create(frame)
+
+        return samples
 
     def get(self):
         return self._sample_repository.get()
