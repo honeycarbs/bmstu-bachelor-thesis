@@ -3,10 +3,11 @@ package postgres
 import (
 	"cluster/internal/entity"
 	"cluster/pkg/psqlcli"
-	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/jmoiron/sqlx"
-	"sort"
+	"strconv"
+	"strings"
 )
 
 type coeff struct {
@@ -22,45 +23,6 @@ func NewFramePostgres(cli *psqlcli.Client) *FramePostgres {
 	return &FramePostgres{db: cli.DB}
 }
 
-func (f *FramePostgres) GetOne(sampleHash string, sampleNum int) (entity.Frame, error) {
-	fm := entity.Frame{
-		SampleUUID: sampleHash,
-	}
-
-	err := f.db.Get(&fm,
-		`SELECT uuid, index FROM frame WHERE sample_uuid = $1 AND index = $2`, sampleHash, sampleNum)
-	if err != nil {
-		panic(err)
-	}
-
-	fm.MFCCs, err = f.getMFCCs(fm.ID)
-	if err != nil {
-		return entity.Frame{}, err
-	}
-
-	return fm, nil
-}
-
-func (f *FramePostgres) getMFCCs(frameId string) ([]float64, error) {
-	var coefficients []coeff
-	err := f.db.Select(&coefficients,
-		`SELECT index, value FROM mfcc WHERE frame_uuid = $1`, frameId)
-	if err != nil {
-		panic(err)
-	}
-
-	sort.Slice(coefficients, func(i, j int) bool {
-		return coefficients[i].Index < coefficients[j].Index
-	})
-
-	values := make([]float64, len(coefficients))
-	for i, c := range coefficients {
-		values[i] = c.Value
-	}
-
-	return values, err
-}
-
 func (f *FramePostgres) AssignCluster(clusterID, frameID string) error {
 	query := "UPDATE frame SET cluster_uuid = $1 WHERE uuid = $2"
 	_, err := f.db.Exec(query, clusterID, frameID)
@@ -68,17 +30,61 @@ func (f *FramePostgres) AssignCluster(clusterID, frameID string) error {
 	return err
 }
 
-func (f *FramePostgres) CountPerSample(sampleHash string) (int, error) {
-	query := "select count(uuid) from frame where sample_uuid =  $1"
-
-	var count int
-	if err := f.db.Get(&count, query, sampleHash); err != nil {
-		if err == sql.ErrNoRows {
-			return 0, errors.New("sample does not exist")
-		} else {
-			return 0, err
-		}
+func (f *FramePostgres) GetAll() ([]entity.Frame, error) {
+	var frames []entity.Frame
+	query := `SELECT f.uuid, f.sample_uuid, f.index, array_agg(m.value ORDER BY m.index) AS mfccs
+			FROM frame f INNER JOIN mfcc m ON f.uuid = m.frame_uuid
+			GROUP BY f.uuid, f.sample_uuid, f.index, f.cluster_uuid`
+	rows, err := f.db.Query(query)
+	if err != nil {
+		return nil, err
 	}
 
-	return count, nil
+	for rows.Next() {
+		var (
+			uuid       string
+			sampleUUID string
+			index      int
+			mfccsStr   string
+		)
+
+		err = rows.Scan(&uuid, &sampleUUID, &index, &mfccsStr)
+
+		if err != nil {
+			return nil, err
+		}
+		mfccs, err := parseMFCC(mfccsStr)
+		if err != nil {
+			return nil, err
+		}
+
+		frames = append(frames, entity.Frame{
+			ID:         uuid,
+			SampleUUID: sampleUUID,
+			Index:      index,
+			MFCCs:      mfccs,
+		})
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return frames, nil
+}
+
+func parseMFCC(mfccStr string) ([]float64, error) {
+	mfccStr = strings.Trim(mfccStr, "{}")    // Remove curly braces
+	strValues := strings.Split(mfccStr, ",") // Split by comma
+	floatValues := make([]float64, 0, len(strValues))
+
+	for _, strValue := range strValues {
+		floatValue, err := strconv.ParseFloat(strValue, 64)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("error while parsing float value %v: %v", strValue, err))
+		}
+		floatValues = append(floatValues, floatValue)
+	}
+	return floatValues, nil
 }

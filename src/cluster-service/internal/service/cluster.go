@@ -19,15 +19,12 @@ func NewClusterService(repo *postgres.ClusterPostgres, logger logging.Logger) *C
 
 func (s *ClusterService) AssignClusters(frames []entity.Frame, nclusters, maxRounds int) ([]entity.Cluster, error) {
 	nodes := s.collectFramesData(frames)
-	s.logger.Infof("collected %v frames", len(nodes))
 	centroidsCoords, err := kmeans.KMeans(nodes, nclusters, maxRounds)
 	if err != nil {
 		return nil, err
 	}
-	s.logger.Infof("constructed %v centroids", len(centroidsCoords))
 
 	centroids := s.constructCentroidsData(centroidsCoords)
-	s.logger.Infof("Silhouette coefficient is: %v\n", kmeans.SilhouetteCoefficient(nodes, centroidsCoords))
 	return s.constructClusterData(centroids), nil
 }
 

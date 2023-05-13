@@ -1,6 +1,7 @@
 package kmeans
 
 import (
+	"cluster/pkg/logging"
 	"errors"
 	"math/rand"
 	"time"
@@ -44,6 +45,7 @@ func initialCentroids(Nodes []Node, maxRounds int, centroids []Node) []Node {
 	movement := true
 	for i := 0; i < maxRounds && movement; i++ {
 		movement = false
+		logging.GetLogger().Infof("k-means iteration %v", i)
 
 		groups := make(map[int][]Node)
 
@@ -60,6 +62,7 @@ func initialCentroids(Nodes []Node, maxRounds int, centroids []Node) []Node {
 				movement = true
 			}
 		}
+		logging.GetLogger().Infof("Still moving: %v", movement)
 	}
 
 	return centroids

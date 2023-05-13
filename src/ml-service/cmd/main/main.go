@@ -1,10 +1,7 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"ml/cmd/server"
 	"ml/internal/config"
-	"ml/internal/handler"
 	"ml/internal/repository/postgres"
 	"ml/internal/service"
 	"ml/pkg/logging"
@@ -21,19 +18,26 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	router := gin.New()
-	router.LoadHTMLGlob("etc/static/*.html")
-
+	//router := gin.New()
+	//router.LoadHTMLGlob("etc/static/*.html")
+	//
 	sampleRepo := postgres.NewSamplePostgres(cli)
 	frameRepo := postgres.NewFramePostgres(cli)
-
+	//
 	sampleService := service.NewSampleService(sampleRepo, frameRepo)
 	mlService := service.NewMLService(logger, sampleService)
 
-	mlHandler := handler.NewMLHandler(logger, sampleService, mlService)
-	mlHandler.Register(router)
+	actual, predicted, err := mlService.Test()
+	if err != nil {
+		panic(err)
+	}
 
-	logger.Info("ml handler registered")
-
-	server.Run(cfg, router, logger)
+	mlService.GetHeatmap(actual, predicted)
+	//
+	//mlHandler := handler.NewMLHandler(logger, sampleService, mlService)
+	//mlHandler.Register(router)
+	//
+	//logger.Info("ml handler registered")
+	//
+	//server.Run(cfg, router, logger)
 }

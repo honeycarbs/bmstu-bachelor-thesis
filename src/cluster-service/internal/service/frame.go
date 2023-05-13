@@ -14,19 +14,10 @@ func NewFrameService(repo *postgres.FramePostgres) *FrameService {
 	return &FrameService{repo: repo}
 }
 
-func (s *FrameService) GetAllBySample(sampleUUID string) ([]entity.Frame, error) {
-	count, err := s.countFramesPerSample(sampleUUID)
+func (s *FrameService) GetAll() ([]entity.Frame, error) {
+	frames, err := s.repo.GetAll()
 	if err != nil {
 		return nil, err
-	}
-
-	frames := make([]entity.Frame, count)
-	for i := 1; i <= count; i++ {
-		frame, err := s.repo.GetOne(sampleUUID, i)
-		if err != nil {
-			return nil, err
-		}
-		frames[i-1] = frame
 	}
 
 	return frames, nil
@@ -41,12 +32,4 @@ func (s *FrameService) AssignCluster(frame entity.Frame, clusters []entity.Clust
 	nearest := clusters[nearestIndex]
 
 	return s.repo.AssignCluster(nearest.ID, frame.ID)
-}
-
-func (s *FrameService) countFramesPerSample(sampleHash string) (int, error) {
-	count, err := s.repo.CountPerSample(sampleHash)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
 }

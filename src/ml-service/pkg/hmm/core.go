@@ -31,14 +31,13 @@ func (hmm *HiddenMarkovModel) BaumWelch(observationSequence []int, iterations in
 		hmm.computeGamma(observationSequence, alpha, beta, gamma)
 		hmm.computeXi(observationSequence, alpha, beta, xi)
 
-		// Update the model parameters
 		hmm.update(observationSequence, gamma, xi)
 	}
 }
 
 func (hmm *HiddenMarkovModel) ForwardAlgorithm(observationSequence []int, alpha [][]float64) float64 {
 	for i := 0; i < len(hmm.Transitions); i++ {
-		alpha[0][i] = math.Log(hmm.StationaryProbabilities[i]) + math.Log(hmm.Emissions[i][observationSequence[0]])
+		alpha[0][i] = logAdd(math.Log(hmm.StationaryProbabilities[i]), math.Log(hmm.Emissions[i][observationSequence[0]]))
 	}
 
 	for t := 1; t < len(observationSequence); t++ {

@@ -29,8 +29,7 @@ func (s *MLService) Train() error {
 		model := hmm.New(1, config.GetConfig().ClusterAmount)
 		for _, sm := range samples {
 			obs := s.sampleService.ConstructObservationSequence(sm)
-			model.BaumWelch(obs, 10)
-			s.logger.Println(model.Emissions)
+			model.BaumWelch(obs, 100)
 		}
 
 		err = model.SaveJSON(fmt.Sprintf(config.GetConfig().FilePath, label))
@@ -68,7 +67,7 @@ func (s *MLService) Test() ([]entity.Label, []entity.Label, error) {
 
 			s.logger.Infof("Tested (%v) samples out of (%v)...", i, len(samples))
 
-			fmt.Println(len(models))
+			//fmt.Println(len(models))
 			for i, model := range models {
 				alpha := make([][]float64, len(observationSequence))
 				for i := 0; i < len(observationSequence); i++ {
@@ -92,6 +91,7 @@ func (s *MLService) Test() ([]entity.Label, []entity.Label, error) {
 
 func (s *MLService) GetHeatmap(actual, predicted []entity.Label) {
 	heatmap.GetHeatmap(actual, predicted)
+	s.logger.Infof("heatmap obtained")
 }
 
 func findMax(slice []float64) (int, float64) {
