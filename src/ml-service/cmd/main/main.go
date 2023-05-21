@@ -1,43 +1,34 @@
 package main
 
 import (
-	"ml/internal/config"
-	"ml/internal/repository/postgres"
-	"ml/internal/service"
-	"ml/pkg/logging"
-	"ml/pkg/psqlcli"
+	"fmt"
+	"ml/cmd/cli"
+	"os"
 )
 
 func main() {
-	logging.Init()
-	logger := logging.GetLogger()
-
-	cfg := config.GetConfig()
-	cli, err := psqlcli.New(cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, cfg.DB.DBName, cfg.DB.SSLMode)
-	if err != nil {
-		logger.Fatal(err)
+	if err := cli.RootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	//router := gin.New()
-	//router.LoadHTMLGlob("etc/static/*.html")
+	//logging.Init()
+	//logger := logging.GetLogger()
 	//
-	sampleRepo := postgres.NewSamplePostgres(cli)
-	frameRepo := postgres.NewFramePostgres(cli)
+	//cfg := config.GetConfig()
+	//cli, err := psqlcli.New(cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, cfg.DB.DBName, cfg.DB.SSLMode)
+	//if err != nil {
+	//	logger.Fatal(err)
+	//}
 	//
-	sampleService := service.NewSampleService(sampleRepo, frameRepo)
-	mlService := service.NewMLService(logger, sampleService)
-
-	actual, predicted, err := mlService.Test()
-	if err != nil {
-		panic(err)
-	}
-
-	mlService.GetHeatmap(actual, predicted)
+	//sampleRepo := postgres.NewSamplePostgres(cli, logger)
+	//frameRepo := postgres.NewFramePostgres(cli)
 	//
-	//mlHandler := handler.NewMLHandler(logger, sampleService, mlService)
-	//mlHandler.Register(router)
+	//sampleService := service.NewSampleService(sampleRepo, frameRepo, logger)
+	//mlService := service.NewMLService(logger, sampleService)
 	//
-	//logger.Info("ml handler registered")
+	//emo, err := mlService.Recognize(
+	//	"/home/honeycarbs/BMSTU/bmstu-bachelor-thesis/src/DUSHA/crowd_train/wavs/d56b0a86113cb87896c870c04ea2f1db.wav")
 	//
-	//server.Run(cfg, router, logger)
+	//logger.Trace(emo)
 }

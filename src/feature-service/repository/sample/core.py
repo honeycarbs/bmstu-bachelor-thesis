@@ -13,6 +13,14 @@ class SampleRepository(Repository):
         self.db_client.cnx.commit()
         cursor.close()
 
+    def create_many(self, entities):
+        cursor = self.db_client.cnx.cursor()
+        query = "INSERT INTO sample (uuid, audio_path, emotion, batch) VALUES (%s, %s, %s, %s)"
+        values = [(entity.uuid, entity.audio_path, entity.emotion, entity.batch) for entity in entities]
+        cursor.executemany(query, values)
+        self.db_client.cnx.commit()
+        cursor.close()
+
     def get(self):
         cursor = self.db_client.cnx.cursor()
         query = "SELECT uuid, audio_path, emotion, batch FROM sample"

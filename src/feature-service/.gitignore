@@ -1,6 +1,7 @@
 .idea
 logs
-_meta
+etc
 __pycache__/
 **/__pycache__/
+***/__pycache__/
  *.pyc

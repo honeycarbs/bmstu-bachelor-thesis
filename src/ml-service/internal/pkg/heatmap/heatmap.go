@@ -66,7 +66,7 @@ func heatMapBase(actual, predicted []entity.Label) *charts.HeatMap {
 			Calculable: true,
 			Min:        0,
 			Show:       true,
-			//Max:        1,
+			Max:        1,
 			InRange: &opts.VisualMapInRange{
 				Color: []string{"#F0D99C", "#BF444C"},
 			},

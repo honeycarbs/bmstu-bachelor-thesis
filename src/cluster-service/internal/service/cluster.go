@@ -42,6 +42,10 @@ func (s *ClusterService) collectFramesData(frames []entity.Frame) []kmeans.Node 
 	return nodes
 }
 
+func (s *ClusterService) GetAll() ([]entity.Cluster, error) {
+	return s.repo.Get()
+}
+
 func (s *ClusterService) constructCentroidsData(centroidsCoords []kmeans.Node) []entity.Centroid {
 	centroids := make([]entity.Centroid, len(centroidsCoords))
 
@@ -60,7 +64,7 @@ func (s *ClusterService) constructClusterData(centroids []entity.Centroid) []ent
 	for i, centroid := range centroids {
 		clusters[i] = entity.Cluster{
 			ID:       uuid.New().String(),
-			Index:    i + 1,
+			Index:    i,
 			Centroid: centroid,
 		}
 	}

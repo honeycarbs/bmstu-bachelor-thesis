@@ -10,3 +10,7 @@ class Repository(ABC):
     def get(self):
         pass
 
+    @abstractmethod
+    def create_many(self, entities):
+        pass
+

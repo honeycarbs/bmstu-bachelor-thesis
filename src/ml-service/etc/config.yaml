@@ -8,7 +8,7 @@ db:
   port: 5432
   user: admin
   password: admin
-  dbname: thesis
+  dbname: dusha
   ssl_mode: disable
-cluster_amount: 2500
+cluster_amount: 2000
 model_file_path: etc/model-%s.json

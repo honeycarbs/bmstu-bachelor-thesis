@@ -10,5 +10,5 @@ db:
   password: admin
   dbname: thesis
   ssl_mode: disable
-cluster_amount: 2500
+cluster_amount: 100
 kmeans_max_rounds: 3

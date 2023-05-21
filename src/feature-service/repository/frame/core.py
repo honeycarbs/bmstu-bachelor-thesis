@@ -32,3 +32,34 @@ class FrameRepository(Repository):
             self.db_client.cnx.commit()
 
         cursor.close()
+
+    def create_many(self, frames):
+        frame_ids = [frame.id for frame in frames]
+        mfccs = [frame.mfcc for frame in frames]
+
+        self._create_frames(frames)
+        self._create_mfccs(frame_ids, mfccs)
+
+    def _create_frames(self, frames):
+        cursor = self.db_client.cnx.cursor()
+        query = "INSERT INTO frame (uuid, sample_uuid, index) VALUES (%s, %s, %s)"
+        values = [(frame.id, frame.sample_id, frame.sample_num) for frame in frames]
+
+        cursor.executemany(query, values)
+        self.db_client.cnx.commit()
+        cursor.close()
+
+    def _create_mfccs(self, frame_ids, mfccs):
+        cursor = self.db_client.cnx.cursor()
+        query = "INSERT INTO mfcc (uuid, frame_uuid, index, value) VALUES (%s, %s, %s, %s)"
+        values = []
+
+        for frame_id, mfcc in zip(frame_ids, mfccs):
+            for i, c in enumerate(mfcc):
+                mfcc_uuid = str(uuid.uuid4())
+                value = c.item()
+                values.append((mfcc_uuid, frame_id, i + 1, value))
+
+        cursor.executemany(query, values)
+        self.db_client.cnx.commit()
+        cursor.close()

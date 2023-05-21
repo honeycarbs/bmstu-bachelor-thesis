@@ -14,7 +14,7 @@
 %Для хранения и передачи данных между модулями было решено использовать реляционную базу данных. В качестве СУБД была выбрана PostgreSQL~\cite{postgresql}, поскольку языки Python и Golang, используемые для написания программного обеспечения, имеют встроенные пакеты работы с данной СУБД.
 \section{Компоненты программного обеспечения} 
 \subsection{Формирование вектора информативных признаков}
-Сервис формирования вектора информативных признаков выполняет три основные задачи:
+Компонент формирования вектора информативных признаков выполняет три основные задачи:
 \begin{itemize}
 	\item чтение файла разметки, предоставленного разработчиками корпуса DUSHA;
 	\item формирование вектора мел-кепстральных коэффициентов для каждого кадра аудиофайла, прочитанного из файла разметки;
@@ -88,8 +88,8 @@ class AudioFeaturesExtractor:
         self.frame_length = int(self.sampling_rate * frame_length)
         self.hop_length = int(hop_length * self.sampling_rate)
 
-        self.frames = librosa.util.frame(sig, frame_length=self.frame_length,
-        								 hop_length=self.hop_length)
+        self.frames = librosa.util.frame(
+        	sig, frame_length=self.frame_length, hop_length=self.hop_length)
 
     def get_mfcc(self, n_mfcc=13):
         mfcc = []
@@ -193,7 +193,8 @@ type Node []float64
 
 func KMeans(Nodes []Node, clusterCount int, maxRounds int) ([]Node, error) {
     if len(Nodes) < clusterCount {
-        return nil, errors.New("amount of nodes is smaller than cluster count")
+        return nil, 
+        	errors.New("amount of nodes is smaller than cluster count")
     }
 
     stdLen := 0
@@ -274,10 +275,12 @@ type FramePostgres struct {
 	label=lst:cluster:frame-repo-get-all]
 func (f *FramePostgres) GetAll() ([]entity.Frame, error) {
 	var frames []entity.Frame
+	
 	query := `SELECT f.uuid, f.sample_uuid, f.index, 
 		array_agg(m.value ORDER BY m.index) AS mfccs
 	FROM frame f INNER JOIN mfcc m ON f.uuid = m.frame_uuid
 	GROUP BY f.uuid, f.sample_uuid, f.index, f.cluster_uuid`
+	
 	rows, err := f.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -383,8 +386,8 @@ func (s *ClusterService) constructClusterData(centroids []entity.Centroid)
 \begin{lstlisting}[
 	caption={Установка соответствия между индексом центроида и его модельной структурой},
 	label=lst:cluster:cluster-centroid-data]
-func (s *ClusterService) constructCentroidsData(centroidsCoords []kmeans.Node)
-						 					    []entity.Centroid {
+func (s *ClusterService) constructCentroidsData(centroidsCoords
+										[]kmeans.Node) []entity.Centroid {
     centroids := make([]entity.Centroid, len(centroidsCoords))
     
     for i, centroid := range centroidsCoords {
@@ -402,8 +405,9 @@ func (s *ClusterService) constructCentroidsData(centroidsCoords []kmeans.Node)
 	caption={Кластеризация},
 	label=lst:cluster:cluster-assign-clusters]
 func (s *ClusterService) AssignClusters(frames []entity.Frame, 
-						nclusters, maxRounds int) ([]entity.Cluster, error) {
+					nclusters, maxRounds int) ([]entity.Cluster, error) {
 	nodes := s.collectFramesData(frames)
+	
 	centroidsCoords, err := kmeans.KMeans(nodes, nclusters, maxRounds)
 	if err != nil {
 		return nil, err
@@ -487,7 +491,7 @@ type Sample struct {
 \begin{lstlisting}[
 	caption={Создание последовательности наблюдений},
 	label=lst:ml:construct-obs]
-func (s *SampleService) ConstructObservationSequence(sm entity.Sample) []int {
+func (s *SampleService) ConstructObsSequence(sm entity.Sample) []int {
 	observations := make([]int, len(sm.Frames))
 	for i := 0; i < len(observations); i++ {
 		observations[i] = sm.Frames[i].ClusterIndex - 1
@@ -527,7 +531,8 @@ func (hmm *HiddenMarkovModel) ForwardAlgorithm(obs []int,
 \begin{lstlisting}[
 	caption={Процедура обратного прохода},
 	label=lst:ml:backward]
-func (hmm *HiddenMarkovModel) BackwardAlgorithm(obs []int, beta [][]float64) {
+func (hmm *HiddenMarkovModel) BackwardAlgorithm(obs []int, 
+												beta [][]float64) {
 	for i := 0; i < len(hmm.Transitions); i++ {
 		beta[len(obs)-1][i] = 0.0
 	}
@@ -573,11 +578,11 @@ func (hmm *HiddenMarkovModel) computeGamma(obs []int, alpha [][]float64,
 	caption={Вычисление $\xi$-вероятностей},
 	label=lst:ml:xi]
 func (hmm *HiddenMarkovModel) computeXi(obs []int, alpha [][]float64, 
-										beta [][]float64, xi [][][]float64) {
+									beta [][]float64, xi [][][]float64) {
 	for t := 0; t < len(obs)-1; t++ {
 		for i := 0; i < len(hmm.Transitions); i++ {
 			for j := 0; j < len(hmm.Transitions); j++ {
-				xi[t][i][j] = alpha[t][i] + math.Log(hmm.Transitions[i][j]) +
+				xi[t][i][j] = alpha[t][i] + math.Log(hmm.Transitions[i][j])+
 					math.Log(hmm.Emissions[j][obs[t+1]]) + beta[t+1][j]
 			}
 		}
@@ -599,6 +604,7 @@ func (hmm *HiddenMarkovModel) computeXi(obs []int, alpha [][]float64,
 		for i := 0; i < len(hmm.Transitions); i++ {
 			for j := 0; j < len(hmm.Transitions); j++ {
 				xi[t][i][j] = math.Exp(xi[t][i][j] - maxVal)
+				
 				sum += xi[t][i][j]
 			}
 		}
@@ -699,9 +705,9 @@ func (hmm *HiddenMarkovModel) SaveJSON(filename string) error {
 
 Из вычисленных вероятностей наблюдения выбирается максимальная. Скрытая марковская модель, которой принадлежит максимальная вероятность наблюдения считается подходящей для входной последовательности и эмоция, на которой была обучена эта модель, считается наиболее вероятной.
 
-Результат распознавания эмоций представлен в качестве матрицы ошибок. На листинге \ref{lst:ml:cm} представлена инициализация матрицы ошибок с использованием истинных и спрогнозированных значений разметки.
+Результат распознавания эмоций представлен в качестве матрицы несоответствий. На листинге \ref{lst:ml:cm} представлена инициализация матрицы несоответствий с использованием истинных и спрогнозированных значений разметки.
 \begin{lstlisting}[
-	caption={Инициализация матрицы ошибок},
+	caption={Инициализация матрицы несоответствий},
 	label=lst:ml:cm]
 func NewConfusionMatrix(labels []entity.Label, actual,
 						predicted []entity.Label) *ConfusionMatrix {
@@ -718,9 +724,9 @@ func NewConfusionMatrix(labels []entity.Label, actual,
 	return &ConfusionMatrix{labels: labels, Values: confusionMatrix}
 }
 \end{lstlisting}
-Матрицу ошибок перед отображением следует нормализовать. Нормализованная матрица ошибок обычно представляется в виде процентных значений или долей. На листинге \ref{lst:ml:cm-norm} представлена нормализация матрицы ошибок.
+Матрицу несоответствий перед отображением следует нормализовать. Нормализованная матрица несоответствий обычно представляется в виде долей. На листинге \ref{lst:ml:cm-norm} представлена нормализация матрицы несоответствий.
 \begin{lstlisting}[
-	caption={Нормализация матрицы ошибок},
+	caption={Нормализация матрицы несоответствий},
 	label=lst:ml:cm-norm]
 func (m *ConfusionMatrix) Normalize() {
 	numClasses := len(m.labels)
@@ -825,12 +831,10 @@ func runBaumWelchTest(fEmit, fObs, fExp string, dim int) error {
 	if err != nil {
 		return err
 	}
-	
 	equal := matricesEqual(hmm.Emissions, expectedEmissions, 0.005)
 	if !equal {
 		return errors.New("emission matrix differs from expected")
 	}
-	
 	return nil
 }
 \end{lstlisting}
@@ -846,7 +850,6 @@ func TestHiddenMarkovModel_BaumWelchBigMatrix(t *testing.T) {
 		t.Fatal(err)
 	}
 	model.BaumWelch(obs, 100)
-	
 	if hasNaN(model.Emissions) {
 		t.Fatal(fmt.Errorf("matrix has NaN values"))
 	}
@@ -854,3 +857,41 @@ func TestHiddenMarkovModel_BaumWelchBigMatrix(t *testing.T) {
 \end{lstlisting}
 
 \section{Формат входных и выходных данных}  
+Компонент формирования вектора информативных признаков принимает на вход файл формата YAML \cite{yaml}, содержащий следующие поля:
+\begin{itemize}
+	\item <<dataset\_path>>: абсолютный путь к корневой директории корпуса речи;
+	\item следующие поля для DSN (\textit{англ. Data Source Name}) строки соединения с базой данных:
+	\begin{itemize}
+		\item <<psql\_bind\_ip>>: сервер, на котором работает база данных;
+		\item <<psql\_port>>: порт, на котором работает база данных;
+		\item <<psql\_user>>: имя пользователя базы данных;
+		\item <<psql\_password>>: пароль для пользователя базы данных;
+		\item <<psql\_database>>: имя базы данных.
+	\end{itemize}
+\end{itemize}
+Так же компонент принимает на вход параметр командной строки <<dataset\_metafile>>, представляющий относительный путь файла разметки от корневой директории корпуса речи <<dataset\_path>> и параметр <<mode>>, представляющий ключ для выполняемого действия: <<from-file>>, если требуется заполнить базу данных из файла разметки и <<add>>, если требуется добавить файл по его абсолютному пути. Во втором случае принимается на вход также аргумент <<audio\_path>>, представляющий собой абсолютный путь до файла, подвергаемого обработке.
+
+Компонент кластеризации так же принимает на вход файл формата YAML, содержащий следующие поля:
+\begin{itemize}
+	\item Аналогичные конфигурационному файлу для компонента формирования вектора информативных признаков поля для DSN строки соединения с базой данных (<<psql\_bind\_ip>>, <<psql\_port>>, <<psql\_user>>, <<psql\_password>>, <<psql\_database>>) и параметр <<ssl\_mode>>, определяющий уровень требуемой безопасности для соединения;
+	\item <<cluster\_amount>>: число кластеров для алгоритма k-means;
+	\item <<kmeans\_max\_rounds>>: число итераций для алгоритма k-means.
+\end{itemize}
+Так же компонент принимает на вход параметр командной строки <<mode>>, представляющий ключ для выполняемого действия: <<cluster-all>>, если требуется произвести кластеризацию всех кадров в базе данных, и <<assign>> в случае если требуется соотнести один набор кадров с соответствующими кластерами. Во втором случае принимается на вход также аргумент <<audio\_path>>, представляющий собой абсолютный путь до файла, подвергаемого обработке.
+
+Компонент создания и обучения скрытых марковских моделей принимает на вход параметр командной строки <<mode>>, представляющий ключ для выполняемого действия (обучение, проверка или распознавание), принимающий значения <<test>>, <<train>> и <<recognize>>. Также компонент создания и обучения скрытых марковских моделей принимает на вход файл формата YAML, содержащий следующие поля:
+\begin{itemize}
+	\item Аналогичные конфигурационному файлу для компонента кластеризации поля для DSN строки соединения с базой данных;
+	\item <<cluster\_amount>>: число кластеров алгоритма k-means (для задания количества состояний моделей);
+	\item <<model\_file\_path>>: шаблон для имени файла скрытой марковской модели, представляющий строку со строковым спецификатором формата, в который во время выполнения алгоритма будет подставлено название эмоции.
+\end{itemize}
+Компонент создания и обучения скрытых марковских моделей имеет также выходной параметр -- html-файл, содержащий инструкции отображения матрицы ошибок в веб-браузере.
+
+\section{Физические компоненты системы и их размещение на устройствах}
+Система распознавания размещена на одном устройстве, однако для каждого компонента присутствует собственная среда исполнения: компоненты создания и обучения СММ и кластеризации имеют среду исполнения Golang, в то время как компонент формирования информативных признаков имеет среду исполнения Python3.  Точка входа, агрегирующая все функции системы, так же имеет свою среду исполнения.  Диаграмма развертывания, отражающая особенности физической архитектуры системы, представлена на рисунке \ref{fig:deploy}.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth]{assets/deploy}
+	\caption{Диаграмма развертывания}
+	\label{fig:deploy}
+\end{figure} 

@@ -53,7 +53,7 @@ func (f *FramePostgres) GetAll() ([]entity.Frame, error) {
 		if err != nil {
 			return nil, err
 		}
-		mfccs, err := parseMFCC(mfccsStr)
+		mfccs, err := parsePointCords(mfccsStr)
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +74,52 @@ func (f *FramePostgres) GetAll() ([]entity.Frame, error) {
 	return frames, nil
 }
 
-func parseMFCC(mfccStr string) ([]float64, error) {
+func (f *FramePostgres) GetByAudio(path string) ([]entity.Frame, error) {
+	var frames []entity.Frame
+	query := `SELECT f.uuid, f.sample_uuid, f.index, array_agg(m.value ORDER BY m.index) AS mfccs
+				FROM frame AS f JOIN sample ON f.sample_uuid = sample.uuid JOIN mfcc m ON f.uuid = m.frame_uuid
+				WHERE sample.audio_path = $1
+				GROUP BY f.uuid, f.sample_uuid, f.index, f.cluster_uuid`
+	rows, err := f.db.Query(query, path)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var (
+			uuid       string
+			sampleUUID string
+			index      int
+			mfccsStr   string
+		)
+
+		err = rows.Scan(&uuid, &sampleUUID, &index, &mfccsStr)
+
+		if err != nil {
+			return nil, err
+		}
+		mfccs, err := parsePointCords(mfccsStr)
+		if err != nil {
+			return nil, err
+		}
+
+		frames = append(frames, entity.Frame{
+			ID:         uuid,
+			SampleUUID: sampleUUID,
+			Index:      index,
+			MFCCs:      mfccs,
+		})
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return frames, nil
+}
+
+func parsePointCords(mfccStr string) ([]float64, error) {
 	mfccStr = strings.Trim(mfccStr, "{}")    // Remove curly braces
 	strValues := strings.Split(mfccStr, ",") // Split by comma
 	floatValues := make([]float64, 0, len(strValues))

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"strconv"
 )
 
 type ClusterPostgres struct {
@@ -42,6 +43,57 @@ func (c *ClusterPostgres) Create(cluster entity.Cluster) error {
 	}
 
 	return tx.Commit()
+}
+
+func (c *ClusterPostgres) Get() ([]entity.Cluster, error) {
+	var clusters []entity.Cluster
+	query := `
+			SELECT cl.uuid, cl.uuid as index, array_agg(cc.value ORDER BY cc.index) AS value
+			FROM centroid_coords AS cc JOIN centroid cl ON cc.centroid_uuid = cl.uuid
+			GROUP BY cl.uuid
+			`
+	rows, err := c.db.Query(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var (
+			id       string
+			index    string
+			valueStr string
+		)
+
+		err = rows.Scan(&id, &index, &valueStr)
+		value, err := parsePointCords(valueStr)
+		if err != nil {
+			return nil, err
+		}
+
+		centroid := entity.Centroid{
+			ID:    id,
+			Value: value,
+		}
+
+		intIndex, err := strconv.Atoi(index)
+		if err != nil {
+			return nil, err
+		}
+
+		clusters = append(clusters, entity.Cluster{
+			ID:       id,
+			Index:    intIndex,
+			Centroid: centroid,
+		})
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return clusters, nil
 }
 
 func createCentroid(tx *sql.Tx, centroid entity.Centroid) error {

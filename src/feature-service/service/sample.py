@@ -1,3 +1,5 @@
+import uuid
+
 from entity.sample import Sample
 from entity.frame import Frame
 from processor.core import DatasetProcessor
@@ -20,30 +22,55 @@ class SampleService:
     def set_dataset_metafile(self, dataset_metafile):
         self.dataset_processor.set_metafile(dataset_metafile)
 
-    def create(self):
+    def create_many(self):
         self.dataset_processor.get_wavs()
 
         samples = []
+        frames = []
+
         self._logger.info(f"red {len(self.dataset_processor.wavs)} wavs from file")
         for i, wav in enumerate(self.dataset_processor.wavs):
             sample = Sample(wav["uuid"], wav["audio_path"], wav["emotion"], wav["batch"])
-
-            self._logger.info(sample.__dict__())
-            self._sample_repository.create(sample)
-                
             samples.append(sample)
-            self._logger.info(f"created frame {i} out of {len(self.dataset_processor.wavs)}")
 
             audio_extractor = AudioFeaturesExtractor(file_path=sample.audio_path)
             mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
-            frame_num = mfcc_features.shape[0]
+            frames_mfccs = mfcc_features.shape[0]
 
-            for j in range(frame_num):
+            for j in range(frames_mfccs):
                 mfcc = mfcc_features[j][0]
                 frame = Frame(sample.uuid, j + 1, mfcc)
-                self._frame_repository.create(frame)
+                frames.append(frame)
+
+            self._logger.info(f"created sample {i} out of {len(self.dataset_processor.wavs)} with {frames_mfccs} frames")
+
+            if len(samples) >= 100:
+                self._logger.info(f"batch limit of 100 reached, database successfully updated")
+                self._sample_repository.create_many(samples)
+                self._frame_repository.create_many(frames)
+
+                samples = []
+                frames = []
 
         return samples
+
+    def create(self, audio_path):
+        frames = []
+        sample = Sample(str(uuid.uuid4()), audio_path, "", "")
+
+        audio_extractor = AudioFeaturesExtractor(file_path=sample.audio_path)
+        mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
+        frames_mfccs = mfcc_features.shape[0]
+
+        for j in range(frames_mfccs):
+            mfcc = mfcc_features[j][0]
+            frame = Frame(sample.uuid, j + 1, mfcc)
+            frames.append(frame)
+
+        self._sample_repository.create(sample)
+        self._frame_repository.create_many(frames)
+
+        self._logger.info(f"created sample with {len(frames)} frames")
 
     def get(self):
         return self._sample_repository.get()

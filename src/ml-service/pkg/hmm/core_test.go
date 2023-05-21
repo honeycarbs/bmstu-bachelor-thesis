@@ -47,7 +47,7 @@ func TestHiddenMarkovModel_BaumWelch(t *testing.T) {
 }
 
 func TestHiddenMarkovModel_BaumWelchBigMatrix(t *testing.T) {
-	dim := 2500
+	dim := 200000
 	model := New(1, dim)
 	obs, err := readArrayFromFile("etc/test-cases/hmm-big-obs")
 	if err != nil {
