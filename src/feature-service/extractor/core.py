@@ -15,7 +15,7 @@ class AudioFeaturesExtractor:
     def get_mfcc(self, n_mfcc=13):
         mfcc = []
         for frame in self.frames.T:
-            mfcc_per_frame = librosa.feature.mfcc(y=frame, n_fft=self.frame_length, n_mfcc=n_mfcc)
+            mfcc_per_frame = librosa.feature.mfcc(y=frame, sr=self.sampling_rate, n_fft=self.frame_length, n_mfcc=n_mfcc)
             mfcc.append(mfcc_per_frame.T)
 
         return np.array(mfcc)

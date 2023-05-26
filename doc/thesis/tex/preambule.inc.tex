@@ -144,13 +144,16 @@
 
 \newcolumntype{O}{>{\centering\arraybackslash}p{0.08\textwidth}}
 \newcolumntype{T}{>{\centering\arraybackslash}p{0.3\textwidth}}
-\newcolumntype{H}{>{\centering\arraybackslash}p{0.45\textwidth}}
-%\newcolumntype{DT}{>{\centering\arraybackslash}p{0.6\textwidth}}
+\newcolumntype{L}{>{\centering\arraybackslash}p{0.45\textwidth}}
 \newcolumntype{P}{>{\centering\arraybackslash}p{0.2\textwidth}}
 \newcolumntype{R}{>{\centering\arraybackslash}p{0.22\textwidth}}
 \newcolumntype{F}{>{\centering\arraybackslash}p{0.25\textwidth}}
-\newcolumntype{E}{>{\centering\arraybackslash}p{0.16\textwidth}}
-\newcolumntype{G}{>{\centering\arraybackslash}p{0.64\textwidth}}
+\newcolumntype{S}{>{\centering\arraybackslash}p{0.15\textwidth}}
+\newcolumntype{U}{>{\centering\arraybackslash}p{0.16\textwidth}}
+\newcolumntype{N}{>{\centering\arraybackslash}p{0.19\textwidth}}
+\newcolumntype{H}{>{\centering\arraybackslash}p{0.13\textwidth}}
+\newcolumntype{E}{>{\centering\arraybackslash}p{0.18\textwidth}}
+\newcolumntype{G}{>{\centering\arraybackslash}p{0.6\textwidth}}
 \newcolumntype{Q}{>{\centering\arraybackslash}p{0.1\textwidth}}
 
 % ---------------------------------------- FIGURE ----------------------------------------
@@ -235,13 +238,15 @@
 	language=auto,
 	autolang=other,
 	sorting=none,
-	maxbibnames=99,
-	bibencoding=inputenc,
-	blockpunct=space,
-	backend=biber,
-	citetracker,
-]{biblatex}
+	movenames=true,
+	]{biblatex}
 \usepackage{csquotes}
+
+% Modify the @article style
+\DeclareFieldFormat[article]{title}{#1} % Preserve the title as is
+
+
+
 
 \newcounter{totalbibentries}
 \newcommand*{\listcounted}{}
@@ -259,9 +264,7 @@
 %\providecommand*{\BibDash}{}
 \DeclareFieldFormat{extradate}{}
 
-\DefineBibliographyStrings{russian}{%
-	urlfrom = {[Электронный ресурс]},
-}
+\DeclareFieldFormat[online]{title}{#1 [Электронный ресурс]}
 
 \DeclareFieldFormat{urldate}{(дата обращения:\addspace\thefield{urlday}\adddot \thefield{urlmonth}\adddot\thefield{urlyear})}
 

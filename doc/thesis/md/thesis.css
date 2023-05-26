@@ -84,18 +84,25 @@ img[alt~="center"] {
   gap: 1rem;
 }
 
+.fourcolumns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
 .center {
   text-align: center;
 }
 
 table {
   table-layout: fixed;
+  text-align: center;
   width: 95%;
 }
 
 th {
   font-weight: normal !important;
-  height: 50px;
+  height: 60px;
   text-align: center;
   padding: 15px;
   font-style: italic;
@@ -103,7 +110,7 @@ th {
 }
 
 td {
-  height: 50px;
+  height: 55px;
   padding: 10px;
   vertical-align: middle;
   border: 1px solid black;
@@ -113,6 +120,42 @@ td {
   background-color: rgb(230, 230, 230);
 }
 
-.red-text {
-  color: red;
+.widetab {
+  table-layout: fixed;
+  text-align: center;
+  width: 100%;
+}
+
+.smaller-cell {
+  height: 40px;
+  width: 90%;
+}
+
+.small-cell {
+  height: 40px;
+  padding: 3px;
+}
+
+.bold-cell {
+  height: 40px;
+  font-weight: bold !important;
+}
+
+.sudoku {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  padding: 15px;
+}
+
+.sudoku-square {
+  border: 1px solid;
+  width: 100px;
+  height: 100px;
+
+  gap: 0 0;
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }

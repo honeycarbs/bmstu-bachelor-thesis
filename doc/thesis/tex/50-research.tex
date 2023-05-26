@@ -55,12 +55,16 @@
 	\centering
 	\caption{Значения TP, TN, FP, FN каждого класса разметки}\label{tab:tpfn}
 	\renewcommand{\arraystretch}{1.3}
-	\begin{tabular}{|O|P|P|P|P|}
+	\begin{tabular}{|S|E|E|E|E|}
 		\hline
-		\multirow{3}{*}{\textit{Класс}} & \textit{TP} & \textit{TN} & \textit{FP} & \textit{FN} \\
+		\multirow{2}{*}{\textit{Класс}} & \textit{TP} & \textit{TN} & \textit{FP} & \textit{FN} \\
 		\cline{2-5}
-		& \textit{Истинно} & \textit{Истинно} & \textit{Ложно} & \textit{Ложно} \\
-		& \textit{положительные} & \textit{отрицательные} & \textit{положительные} & \textit{отрицательные} \\
+		&
+		\multirow{2}{*}{\parbox{0.18\textwidth}{\centering \textit{Истинно положительные}}} &
+		\multirow{2}{*}{\parbox{0.18\textwidth}{\centering \textit{Истинно отрицательные}}} &
+		\multirow{2}{*}{\parbox{0.18\textwidth}{\centering \textit{Ложно положительные}}} &
+		\multirow{2}{*}{\parbox{0.18\textwidth}{\centering \textit{Ложно отрицательные}}} \\
+		& & & & \\
 		\hline
 		\textit{angry} & 533 & 4095 & 920 & 467 \\
 		\hline
@@ -111,7 +115,7 @@
 \end{table}
 F-мера представляет собой гармоническое среднее между точностью и полнотой и вычисляется согласно  \ref{eq:f1}:
 \begin{equation}\label{eq:f1}
-	\mathrm{F} = 2 \cdot \cfrac{\mathrm{Precision} \cdot \mathrm{Recall}}{\mathrm{Precision} + \mathrm{Recall}}
+	\mathrm{F} = 2 \cdot \cfrac{\mathrm{Precision} \cdot \mathrm{Recall}}{\mathrm{Precision} + \mathrm{Recall}}.
 \end{equation}
 Значение F-меры для каждого класса представлено в таблице \ref{tab:F}.
 \begin{table}[H]
@@ -155,13 +159,13 @@ F-мера представляет собой гармоническое сре
 	\centering
 	\caption{Замеры качества обучения классификатора}\label{tab:f-train}
 	\renewcommand{\arraystretch}{1.3}
-	\begin{tabular}{|F|E|E|E|E|}
+	\begin{tabular}{|F|S|S|S|S|}
 		\hline
 		\textit{Количество} & \multicolumn{4}{G|}{\textit{F-мера}} \\ \cline{2-5} 
 		\textit{элементов, шт.} & angry & neutral & positive & sad \\ \hline
 		80 & 0 & 0.196 & 0.34 & 0.254 \\ \hline
 		240 & 0.379 & 0.179 & 0.260 & 0.215 \\ \hline
-		400 & 0.413 & 0.270 & 0.334 & 0.218 \\ \hline
+		400 & 0.313 & 0.270 & 0.334 & 0.218 \\ \hline
 		560 & 0.321 & 0.140 & 0.387 & 0.265 \\ \hline
 		800 & 0.340 & 0.145 & 0.344 & 0.308 \\ \hline
 		1200 & 0.366 & 0.281 & 0.432 & 0.321 \\ 
@@ -185,7 +189,7 @@ F-мера представляет собой гармоническое сре
 	\centering
 	\caption{Замеры времени обучения классификатора}\label{tab:time-train}
 	\renewcommand{\arraystretch}{1.2}
-	\begin{tabular}{|H|H|}
+	\begin{tabular}{|L|L|}
 		\hline
 		\textit{Количество элементов обучающей выборки, шт} & \textit{Время обучения, мс} \\ \hline
 		80 & 32333\\ \hline
