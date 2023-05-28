@@ -35,14 +35,14 @@ class SampleService:
 
             audio_extractor = AudioFeaturesExtractor(file_path=sample.audio_path)
             mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
-            frames_mfccs = mfcc_features.shape[0]
+            sample_frames_num = mfcc_features.shape[0]
 
-            for j in range(frames_mfccs):
-                mfcc = mfcc_features[j][0]
+            for j in range(sample_frames_num):
+                mfcc = mfcc_features[j]
                 frame = Frame(sample.uuid, j + 1, mfcc)
                 frames.append(frame)
 
-            self._logger.info(f"created sample {i} out of {len(self.dataset_processor.wavs)} with {frames_mfccs} frames")
+            self._logger.info(f"created sample {i} out of {len(self.dataset_processor.wavs)} with {sample_frames_num} frames")
 
             if len(samples) >= 100:
                 self._logger.info(f"batch limit of 100 reached, database successfully updated")

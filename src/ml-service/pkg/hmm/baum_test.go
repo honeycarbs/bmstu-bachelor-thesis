@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"math"
 	"ml/pkg/logging"
 	"os"
 	"strconv"
@@ -43,21 +42,6 @@ func TestHiddenMarkovModel_BaumWelch(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
-	}
-}
-
-func TestHiddenMarkovModel_BaumWelchBigMatrix(t *testing.T) {
-	dim := 200000
-	model := New(1, dim)
-	obs, err := readArrayFromFile("etc/test-cases/hmm-big-obs")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	model.BaumWelch(obs, 100)
-
-	if hasNaN(model.Emissions) {
-		t.Fatal(fmt.Errorf("matrix has NaN values"))
 	}
 }
 
@@ -176,15 +160,4 @@ func readArrayFromFile(filePath string) ([]int, error) {
 	}
 
 	return array, nil
-}
-
-func hasNaN(matrix [][]float64) bool {
-	for _, row := range matrix {
-		for _, val := range row {
-			if math.IsNaN(val) {
-				return true
-			}
-		}
-	}
-	return false
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"math"
 	"ml/internal/config"
 	"ml/internal/entity"
 	"ml/internal/pkg/heatmap"
@@ -12,6 +13,7 @@ import (
 
 var (
 	labels = []entity.Label{entity.NEUTRAL, entity.ANGRY, entity.POSITIVE, entity.SAD}
+	//labels = []entity.Label{entity.ANGRY}
 )
 
 type MLService struct {
@@ -31,12 +33,14 @@ func (s *MLService) Train() error {
 		if err != nil {
 			return err
 		}
+
 		model := hmm.New(1, config.GetConfig().ClusterAmount)
-		for _, sm := range samples {
+		for i, sm := range samples {
 			obs := s.sampleService.ConstructObservationSequence(sm)
 			model.BaumWelch(obs, 100)
+			s.logger.Infof("trained %v sample out of %v for model %v, NaN encountered: %v",
+				i, len(samples), label, hasNaN(model.Emissions))
 		}
-		s.logger.Infof("Trained model for (%v)", label)
 
 		err = model.SaveJSON(fmt.Sprintf(config.GetConfig().FilePath, label))
 		if err != nil {
@@ -69,24 +73,14 @@ func (s *MLService) Test() ([]entity.Label, []entity.Label, error) {
 
 		for _, sample := range samples {
 			observationSequence := s.sampleService.ConstructObservationSequence(sample)
-			likelihoods := make([]float64, len(models))
+			index := hmm.FindBestFittedModel(observationSequence, models)
+
 			actual = append(actual, label)
-
-			for i, model := range models {
-				alpha := make([][]float64, len(observationSequence))
-				for i := 0; i < len(observationSequence); i++ {
-					alpha[i] = make([]float64, len(model.Transitions))
-				}
-
-				model.Emissions = hmm.LaplaceSmoothing(model.Emissions)
-				likelihood := model.ForwardAlgorithm(observationSequence, alpha)
-				likelihoods[i] = likelihood
-			}
-
-			predictedIndex, _ := findMax(likelihoods)
-			predicted = append(predicted, labels[predictedIndex])
+			predicted = append(predicted, labels[index])
 		}
 	}
+	fmt.Println(actual)
+	fmt.Println(predicted)
 
 	return actual, predicted, nil
 }
@@ -113,15 +107,15 @@ func (s *MLService) Recognize(path string) (entity.Label, error) {
 	observationSequence := s.sampleService.ConstructObservationSequence(sample)
 	likelihoods := make([]float64, len(models))
 
-	for i, model := range models {
+	for _, model := range models {
 		alpha := make([][]float64, len(observationSequence))
 		for i := 0; i < len(observationSequence); i++ {
 			alpha[i] = make([]float64, len(model.Transitions))
 		}
 
-		model.Emissions = hmm.LaplaceSmoothing(model.Emissions)
-		likelihood := model.ForwardAlgorithm(observationSequence, alpha)
-		likelihoods[i] = likelihood
+		//model.Emissions = hmm.LaplaceSmoothing(model.Emissions)
+		//likelihood := model.ForwardAlgorithm(observationSequence, alpha)
+		//likelihoods[i] = likelihood
 	}
 
 	predictedIndex, _ := findMax(likelihoods)
@@ -138,4 +132,16 @@ func findMax(slice []float64) (int, float64) {
 		}
 	}
 	return index, max
+}
+
+// TODO: remove this bitch
+func hasNaN(matrix [][]float64) bool {
+	for _, row := range matrix {
+		for _, val := range row {
+			if math.IsNaN(val) {
+				return true
+			}
+		}
+	}
+	return false
 }

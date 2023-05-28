@@ -387,36 +387,52 @@ $$
     <tr>
         <th>злость</th>
         <th>нейтраль</th>
-        <th>Полож.</th>
+        <th>радость</th>
         <th>грусть</th>
     </tr>
     <tr>
         <th>злость</th>
-        <td class="colored-cell">44.3%</td>
+        <!-- <td class="colored-cell">44.3%</td>
         <td>6.2%</td>
         <td>35.9%</td>
-        <td>13.6%</td>
+        <td>13.6%</td> -->
+        <td class="colored-cell">534</td>
+        <td>74</td>
+        <td>427</td>
+        <td>165</td>
     </tr>
     <tr>
         <th>нейтраль</th>
-        <td>17.7%</td>
+        <td>210</td>
+        <td class="colored-cell">142</td>
+        <td>540</td>
+        <td>308</td>
+        <!-- <td>17.7%</td>
         <td class="colored-cell">11.8%</td>
         <td>44.8%</td>
-        <td>25.8%</td>
+        <td>25.8%</td> -->
     </tr>
     <tr>
-        <th>Полож.</th>
-        <td>30.8%</td>
+        <th>радость</th>
+        <td>369</td>
+        <td>72</td>
+        <td class="colored-cell">603</td>
+        <td>156</td>
+        <!-- <td>30.8%</td>
         <td>5.8%</td>
         <td class="colored-cell">50.3%</td>
-        <td>13.1%</td>
+        <td>13.1%</td> -->
     </tr>
     <tr>
         <th>грусть</th>
-        <td>28.0%</td>
+        <td>333</td>
+        <td>88</td>
+        <td>416</td>
+        <td class="colored-cell">363</td>
+        <!-- <td>28.0%</td>
         <td>7.3%</td>
         <td>34.6%</td>
-        <td class="colored-cell">30.1%</td>
+        <td class="colored-cell">30.1%</td> -->
     </tr>
 </table>
 
@@ -428,29 +444,33 @@ $$
 
 <div>
 <div class="center"> "нейтраль" </div>
-<table class="sudoku">
+
+<div class="center">
+  <table class="sudoku">
   <tr>
-    <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0">  </td>
+    <caption class="left-caption">экспертная оценка</caption>
+    <caption class ="rotate-side">оценка классификатора</caption>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
   <tr>
-    <td style="border-left: 0;border-top: 0; border-bottom: 0"> Полож. </td>
-    <td class="colored-cell">141</td>
-    <td class="sudoku-square">780</td>
+    <td class="colored-cell">142</td>
+    <td class="sudoku-square">234</td>
+    <td style="border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
   </tr>
   <tr>
-    <td style="border-left: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
-    <td class="sudoku-square">1059</td>
-    <td class="colored-cell">4373</td>
+    <td class="sudoku-square">1058</td>
+    <td class="colored-cell">3366</td>
+    <td style="border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
 </table>
+</div>
 
 <div class="center">
 
-$\mathrm{Precision_{нейтраль}} = 0.38\%$
-$\mathrm{Recall_{нейтраль}} = 11\%$
-$\mathrm{F_{нейтраль}} = 28\%$
+$\mathrm{Precision_{нейтраль}} = 38\%$
+$\mathrm{Recall_{нейтраль}} = 12\%$
+$\mathrm{F_{нейтраль}} = 18\%$
 
 </div>
 
@@ -460,30 +480,33 @@ $\mathrm{F_{нейтраль}} = 28\%$
 
 <div>
 <div class="center"> "грусть" </div>
-<table class="sudoku">
+
+<div class="center">
+  <table class="sudoku">
   <tr>
-    <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0">  </td>
+    <caption class="left-caption">экспертная оценка</caption>
+    <caption class ="rotate-side">оценка классификатора</caption>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
-  <tr>
-    <td style="border-left: 0;border-top: 0; border-bottom: 0"> Полож. </td>
-    <td class="colored-cell">361</td>
-    <td class="sudoku-square">4491</td>
   </tr>
   <tr>
-    <td style="border-left: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
-    <td class="sudoku-square">462</td>
-    <td class="colored-cell">799</td>
+    <td class="colored-cell">363</td>
+    <td class="sudoku-square">629</td>
+    <td style="border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
   </tr>
+  <tr>
+    <td class="sudoku-square">837</td>
+    <td class="colored-cell">2971</td>
+    <td style="border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
-
 </table>
+</div>
 
 <div class="center">
 
 $\mathrm{Precision_{грусть}} = 36\%$
 $\mathrm{Recall_{грусть}} = 30\%$
-$\mathrm{F_{грусть}} = 32%$
+$\mathrm{F_{грусть}} = 33\%$
 
 </div>
 
@@ -497,29 +520,34 @@ $\mathrm{F_{грусть}} = 32%$
 
 <div>
 <div class="center"> "злость" </div>
-<table class="sudoku">
+
+<div class="center">
+  <table class="sudoku">
   <tr>
-    <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0">  </td>
+    <caption class="left-caption">оценка классификатора</caption>
+    <caption class ="rotate-side">экспертная оценка</caption>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
   <tr>
-    <td style="border-left: 0;border-top: 0; border-bottom: 0"> Полож. </td>
-    <td class="colored-cell">533</td>
-    <td class="sudoku-square">920</td>
+    <td class="colored-cell">534</td>
+    <td class="sudoku-square">666</td>
+    <td style="border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
   </tr>
   <tr>
-    <td style="border-left: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
-    <td class="sudoku-square">467</td>
-    <td class="colored-cell">4095</td>
+    <td class="sudoku-square">912</td>
+    <td class="colored-cell">2688</td>
+    <td style="border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
 </table>
+</div>
 
 <div class="center">
 
-$\mathrm{Precision_{злость}} = 37\%$
+$\mathrm{Accuracy_{злость}} = 67\%$
+$\mathrm{Precision_{злость}} = 36\%$
 $\mathrm{Recall_{злость}} = 44\%$
-$\mathrm{F_{злость}} = 36\%$
+$\mathrm{F_{злость}} = 40\%$
 
 </div>
 
@@ -527,29 +555,33 @@ $\mathrm{F_{злость}} = 36\%$
 
 <div>
 <div class="center"> "радость" </div>
-<table class="sudoku">
+
+<div class="center">
+  <table class="sudoku">
   <tr>
-    <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0">  </td>
+    <caption class="left-caption">оценка классификатора</caption>
+    <caption class ="rotate-side">экспертная оценка</caption>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
-    <tr>
-    <td style="border-left: 0;border-top: 0; border-bottom: 0"> Полож. </td>
+  <tr>
     <td class="colored-cell">603</td>
-    <td class="sudoku-square">1206</td>
+    <td class="sudoku-square">1383</td>
+    <td style="border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
   </tr>
   <tr>
-    <td style="border-left: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
-    <td class="sudoku-square">1007</td>
-    <td class="colored-cell">4690</td>
+    <td class="sudoku-square">597</td>
+    <td class="colored-cell">2217</td>
+    <td style="border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
 </table>
+</div>
 
 <div class="center">
 
-$\mathrm{Precision_{радость}}=36\%$
+$\mathrm{Precision_{радость}}=30\%$
 $\mathrm{Recall_{радость}} = 50\%$
-$\mathrm{F_{радость}} = 43\%$
+$\mathrm{F_{радость}} = 37\%$
 
 </div>
 
@@ -561,22 +593,38 @@ $\mathrm{F_{радость}} = 43\%$
 
 ## Выводы
 
-<br>
-
-<div class="twocolumns">
-<div class = "center">
+<div class="center">
 
 На выборке из **6000 элементов** с развномерным распределением классов:
 
-общая F-мера $\approx 35\%$
-максимальная F-мера $\approx 43\%$
-
 </div>
+
+<table>
+  <tr>
+    <th rowspan="2">Точность</th>
+    <th>злость</th>
+    <th>нейтраль</th>
+    <th>радость</th>
+    <th>грусть</th>
+    <td>Σ</td>
+  </tr>
+    <td>67%</td>
+    <td>73%</td>
+    <td>58%</td>
+    <td>69%</td>
+    <td>67%</td>
+</table>
+
+<br>
+
 <div class = "center">
 
-Класс, распознанный
-**наиболее качественно** - "радость" (полнота распознавания $\approx 50\%$),
-**наименее качественно** - "нейтраль" (полнота распознавания $\approx 11\%$)
+**общая точность** $\approx 67\%$
+
+<div class = "center">
+
+Класс, распознанный _наиболее_ точно - "нейтраль" ($\approx 73\%$),
+_наименее_ точно - "радость" ($\approx 58\%$)
 
 </div>
 

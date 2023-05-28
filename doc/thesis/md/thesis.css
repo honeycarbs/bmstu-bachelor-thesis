@@ -159,3 +159,17 @@ td {
   writing-mode: vertical-rl;
   text-orientation: upright;
 }
+
+.rotate-side {
+  writing-mode: vertical-lr;
+  transform: rotate(-180deg);
+  margin: 20px;
+}
+
+caption {
+  font-style: italic;
+}
+
+.left-caption {
+  text-align: left;
+}
