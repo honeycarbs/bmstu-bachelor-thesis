@@ -77,6 +77,10 @@ func (s *MLService) Test() ([]entity.Label, []entity.Label, error) {
 
 			actual = append(actual, label)
 			predicted = append(predicted, labels[index])
+
+			if label == labels[index] && label != entity.NEUTRAL {
+				fmt.Println(sample.AudioPath, label)
+			}
 		}
 	}
 	fmt.Println(actual)
@@ -105,21 +109,9 @@ func (s *MLService) Recognize(path string) (entity.Label, error) {
 	}
 
 	observationSequence := s.sampleService.ConstructObservationSequence(sample)
-	likelihoods := make([]float64, len(models))
+	index := hmm.FindBestFittedModel(observationSequence, models)
 
-	for _, model := range models {
-		alpha := make([][]float64, len(observationSequence))
-		for i := 0; i < len(observationSequence); i++ {
-			alpha[i] = make([]float64, len(model.Transitions))
-		}
-
-		//model.Emissions = hmm.LaplaceSmoothing(model.Emissions)
-		//likelihood := model.ForwardAlgorithm(observationSequence, alpha)
-		//likelihoods[i] = likelihood
-	}
-
-	predictedIndex, _ := findMax(likelihoods)
-	return labels[predictedIndex], nil
+	return labels[index], nil
 }
 
 func findMax(slice []float64) (int, float64) {

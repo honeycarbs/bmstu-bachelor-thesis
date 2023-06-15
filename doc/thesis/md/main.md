@@ -448,8 +448,8 @@ $$
 <div class="center">
   <table class="sudoku">
   <tr>
-    <caption class="left-caption">экспертная оценка</caption>
-    <caption class ="rotate-side">оценка классификатора</caption>
+    <caption class="left-caption">оценка классификатора</caption>
+    <caption class ="rotate-side">экспертная оценка</caption>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
@@ -484,8 +484,8 @@ $\mathrm{F_{нейтраль}} = 18\%$
 <div class="center">
   <table class="sudoku">
   <tr>
-    <caption class="left-caption">экспертная оценка</caption>
-    <caption class ="rotate-side">оценка классификатора</caption>
+    <caption class="left-caption">оценка классификатора</caption>
+    <caption class ="rotate-side">экспертная оценка</caption>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Полож. </td>
     <td style="border-left: 0; border-right: 0;border-top: 0; border-bottom: 0"> Отриц. </td>
   </tr>
@@ -544,7 +544,6 @@ $\mathrm{F_{грусть}} = 33\%$
 
 <div class="center">
 
-$\mathrm{Accuracy_{злость}} = 67\%$
 $\mathrm{Precision_{злость}} = 36\%$
 $\mathrm{Recall_{злость}} = 44\%$
 $\mathrm{F_{злость}} = 40\%$

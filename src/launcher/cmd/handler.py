@@ -16,10 +16,10 @@ def launcher():
 def train(dataset_metafile):
     os.chdir("../feature-service")
     subprocess.run(['python3', 'main.py', 'fill', '--dataset_metafile', dataset_metafile])
-    # os.chdir("../cluster-service")
-    # subprocess.run(['go', 'run', 'cmd/main/main.go', '--mode', 'assign'])
-    # os.chdir("../ml-service")
-    # subprocess.run(['go', 'run', 'cmd/main/main.go', '--mode', 'train'])
+    os.chdir("../cluster-service")
+    subprocess.run(['go', 'run', 'cmd/main/main.go', '--mode', 'assign'])
+    os.chdir("../ml-service")
+    subprocess.run(['go', 'run', 'cmd/main/main.go', '--mode', 'train'])
 
 
 @launcher.command('test', short_help='Launch HMM testing procedure. Type test --help for arguments.')

@@ -60,13 +60,14 @@ class SampleService:
 
         audio_extractor = AudioFeaturesExtractor(file_path=sample.audio_path)
         mfcc_features = audio_extractor.get_mfcc(n_mfcc=13)
-        frames_mfccs = mfcc_features.shape[0]
+        sample_frames_num = mfcc_features.shape[0]
 
-        for j in range(frames_mfccs):
-            mfcc = mfcc_features[j][0]
+        for j in range(sample_frames_num):
+            mfcc = mfcc_features[j]
             frame = Frame(sample.uuid, j + 1, mfcc)
             frames.append(frame)
 
+        # print(frames)
         self._sample_repository.create(sample)
         self._frame_repository.create_many(frames)
 
